@@ -62,22 +62,34 @@ Channel Talk 대화 전문을 페이지네이션·Resume 기능으로 안정 수
 
 Zap 98건 운영 중 오류 로그를 자동 수집 → LLM 유형 분류 → 우선순위별 슬랙 노티. **누적 3,500+ 건 처리 · 미처리 0**. Pipedrive API v1→v2 마이그레이션 98건 무중단 전환. Code.gs 98KB · 2,375줄.
 
+### 6. [Care Unpaid Dashboard](./projects/care-unpaid-dashboard)
+**GAS + Chart.js + Slack · 단독**
+
+주간 미납 CSV → 사업자번호 그룹화 → 월별 탭 자동 적재 → 강제해지 자동 감지 → Chart.js 대시보드 → 슬랙 주간 리포트. **7월 미납 회수율 86.23%** 달성의 데이터 인프라.
+
+### 7. [AlimTalk Template Manager](./projects/alimtalk-template-manager)
+**Solapi + Claude + n8n · 단독**
+
+카카오 알림톡 심사 사이클(초안 → 검수 요청 → 반려 → 재작성) 원스톱 웹 도구. LLM 초안 자동 생성, 카카오 미리보기 UI, 반려 분석 자동화.
+
 ---
 
 ## 관련 프로젝트
 
-### 6. [Pipedrive Filter Dashboard](./projects/pipedrive-filter-dashboard)
+### 8. [Pipedrive Filter Dashboard](./projects/pipedrive-filter-dashboard)
 Pipedrive 필터별 딜 현황 + Solapi 발송 상태 원클릭 재발송.
 
-### 7. [Refund KPI Calculator](./projects/apps-script-refund)
-대시보드 이미지 → Drive OCR로 KPI 자동 산출 · 슬랙 보고문 자동 생성.
+### 9. [Refund KPI Calculator](./projects/apps-script-refund)
+대시보드 이미지 → Drive OCR로 KPI 자동 산출 · 슬랙 보고문 자동 생성 (참고용, 지원 문서에는 미포함).
 
 ---
 
 ## Skills & Stack
 
 **Sales / CRM**
-- Pipedrive (Admin · API v1/v2) · Salesforce Sales Cloud
+- Pipedrive (Admin · API v1/v2)
+- **Salesforce Sales Cloud** (Opportunity · Task · Reports · Dashboards — 현 파이프라인 운영 중)
+- 채널톡 (상담 · Open API · 웹훅)
 - Outbound Sales · Lead Qualification · Pipeline Management
 
 **Automation / Ops**
@@ -104,13 +116,15 @@ sales-ops-portfolio/
 ├── docs/
 │   └── MASKING_POLICY.md        ← 마스킹 원칙
 ├── projects/
-│   ├── cs-operation-tool/       ← GAS + Whisper + LLM
-│   ├── refund-payment-funnel/   ← Python 분석
-│   ├── channeltalk-voc/         ← Channel Talk API 수집
-│   ├── zapier-error-dashboard/  ← Zapier 오류 대시보드
+│   ├── cs-operation-tool/           ← GAS + Whisper + LLM
+│   ├── refund-payment-funnel/       ← Python 분석
+│   ├── channeltalk-voc/             ← Channel Talk API 수집
+│   ├── zapier-error-dashboard/      ← Zapier 오류 대시보드
+│   ├── care-unpaid-dashboard/       ← 미납 관리 (Chart.js + Slack)
+│   ├── alimtalk-template-manager/   ← Solapi + Claude 심사 사이클
 │   ├── pipedrive-filter-dashboard/
-│   └── apps-script-refund/      ← KPI 자동 계산
-├── n8n-workflows/               ← n8n 아키텍처 문서
+│   └── apps-script-refund/          ← KPI 자동 계산 (참고용)
+├── n8n-workflows/                   ← n8n 아키텍처 문서
 └── assets/
     └── screenshots/             ← 배포 증빙 스크린샷
 ```

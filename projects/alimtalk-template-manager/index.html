@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookkeeping Subscription SaaS 알림톡 매니저</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .kakao-preview-wrapper {
+      background: #b2c7d9;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 340px;
+    }
+    .kakao-bubble {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .kakao-header {
+      background: #FEE500;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .kakao-channel {
+      padding: 12px 14px 4px;
+      font-weight: bold;
+      font-size: 13px;
+      color: #333;
+    }
+    .kakao-title {
+      padding: 4px 14px 10px;
+      font-weight: bold;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+    .kakao-divider { border-top: 1px solid #eee; }
+    .kakao-body {
+      padding: 12px 14px;
+      line-height: 1.7;
+      color: #333;
+      white-space: pre-wrap;
+    }
+    .kakao-variable { color: #1a73e8; font-weight: 500; }
+    .kakao-button {
+      border-top: 1px solid #eee;
+      padding: 12px;
+      text-align: center;
+      color: #555;
+      font-size: 14px;
+      cursor: default;
+    }
+    .tab-btn.active {
+      background: #111827;
+      color: #fff;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl md:text-3xl font-bold">Bookkeeping Subscription SaaS 알림톡 매니저</h1>
+        <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-xs px-3 py-1 font-semibold">Groq AI</span>
+      </div>
+      <button id="openSettingsBtn" class="text-xl px-3 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100" title="Webhook URL 설정">⚙️</button>
+    </header>
+
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button class="tab-btn active px-4 py-2 rounded-lg bg-white border border-slate-200" data-tab="compose">✍️ 알림톡 작성</button>
+      <button class="tab-btn px-4 py-2 rounded-lg bg-white border border-slate-200" data-tab="rejected">🚫 반려 분석</button>
+      <button class="tab-btn px-4 py-2 rounded-lg bg-white border border-slate-200" data-tab="submit">📤 검수 요청</button>
+    </div>
+
+    <section id="tab-compose" class="tab-panel">
+      <div class="bg-white border border-slate-200 rounded-xl p-4 md:p-6">
+        <label class="font-semibold">정책/키워드 입력</label>
+        <textarea id="composeKeyword" class="w-full mt-2 h-32 border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="예: 종합소득세 창업감면 안내, 계약서 서명 요청..."></textarea>
+        <div class="mt-4 flex items-center gap-3">
+          <button id="composeBtn" class="px-5 py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700">초안 생성</button>
+          <div id="composeLoading" class="hidden items-center gap-2 text-sm text-slate-600">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" class="opacity-75"></path></svg>
+            <span>Groq AI가 기존 템플릿을 분석 중이에요...</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="composeResult" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="space-y-4">
+          <h3 class="font-bold text-lg">알림톡 미리보기</h3>
+          <div id="composePreview"></div>
+        </div>
+        <div class="space-y-4">
+          <h3 class="font-bold text-lg">변수 목록</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-slate-200">
+              <thead class="bg-slate-100">
+                <tr>
+                  <th class="text-left p-2 border-b">변수명</th>
+                  <th class="text-left p-2 border-b">설명</th>
+                  <th class="text-left p-2 border-b">샘플값</th>
+                </tr>
+              </thead>
+              <tbody id="composeVariables"></tbody>
+            </table>
+          </div>
+          <h3 class="font-bold text-lg">검수 체크리스트</h3>
+          <ul id="composeChecklist" class="space-y-1 text-sm"></ul>
+          <button id="toSubmitBtn" class="px-5 py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500">이 내용으로 검수 요청</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-rejected" class="tab-panel hidden">
+      <div class="bg-white border border-slate-200 rounded-xl p-4 md:p-6">
+        <button id="loadRejectedBtn" class="px-5 py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700">반려 목록 불러오기</button>
+        <div id="rejectedLoading" class="hidden mt-3 text-sm text-slate-600 flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" class="opacity-75"></path></svg>
+          <span>반려 템플릿을 분석 중입니다...</span>
+        </div>
+      </div>
+      <div id="rejectedList" class="mt-6 space-y-4"></div>
+    </section>
+
+    <section id="tab-submit" class="tab-panel hidden">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 md:p-6 space-y-4">
+          <div>
+            <label class="font-semibold">템플릿명</label>
+            <input id="submitName" class="w-full mt-2 border border-slate-300 rounded-lg p-3" placeholder="예: BZN_계약서_서명요청_안내" />
+          </div>
+          <div>
+            <label class="font-semibold">카테고리</label>
+            <select id="submitCategory" class="w-full mt-2 border border-slate-300 rounded-lg p-3">
+              <option value="FINANCE">FINANCE - 금융</option>
+              <option value="DELIVERY">DELIVERY - 배송</option>
+              <option value="RESERVATION">RESERVATION - 예약</option>
+              <option value="ORDER">ORDER - 주문</option>
+              <option value="PAYMENT">PAYMENT - 결제</option>
+              <option value="MEMBERSHIP">MEMBERSHIP - 멤버십</option>
+              <option value="ACCOUNT">ACCOUNT - 계정</option>
+              <option value="NOTICE">NOTICE - 공지</option>
+              <option value="ETC">ETC - 기타</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-semibold">본문</label>
+            <textarea id="submitContent" class="w-full mt-2 h-48 border border-slate-300 rounded-lg p-3" placeholder="본문을 입력하세요. #{변수명} 형식을 사용하세요."></textarea>
+          </div>
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="font-semibold">버튼</label>
+              <button id="addButtonRowBtn" class="text-sm px-3 py-1.5 rounded bg-slate-100 border border-slate-200 hover:bg-slate-200">+ 버튼 추가</button>
+            </div>
+            <div id="buttonRows" class="mt-2 space-y-2"></div>
+          </div>
+          <button id="submitBtn" class="px-5 py-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">검수 요청 제출</button>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-4 md:p-6">
+          <h3 class="font-bold text-lg mb-4">실시간 미리보기</h3>
+          <div id="submitPreview"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="settingsModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white rounded-xl shadow-xl p-6">
+      <h2 class="text-xl font-bold mb-3">n8n Webhook Base URL 설정</h2>
+      <p class="text-sm text-slate-600 mb-3">예: https://your-n8n.com/webhook</p>
+      <input id="baseUrlInput" class="w-full border border-slate-300 rounded-lg p-3" placeholder="https://your-n8n.com/webhook" />
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="closeModalBtn" class="px-4 py-2 rounded-lg border border-slate-300 bg-white">취소</button>
+        <button id="saveBaseUrlBtn" class="px-4 py-2 rounded-lg bg-slate-900 text-white">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+      <h2 class="text-xl font-bold mb-4">✅ 검수 요청 완료</h2>
+      <div id="resultModalBody" class="text-sm text-slate-700 space-y-2"></div>
+      <div class="flex justify-end mt-4">
+        <button id="closeResultModalBtn" class="px-4 py-2 rounded-lg bg-slate-900 text-white">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg hidden"></div>
+
+  <script>
+    var state = {
+      composeResult: null,
+      rejectedResult: null,
+      rejectedList: [],
+      rejectedAnalysisMap: {},
+      rejectedExpandedId: ''
+    };
+    var inMemoryBaseUrl = '';
+
+    function getBaseUrl() {
+      return inMemoryBaseUrl;
+    }
+
+    function setBaseUrl(url) {
+      inMemoryBaseUrl = url;
+    }
+
+    function showToast(message) {
+      var toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(function () {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    function openSettingsModal() {
+      document.getElementById('baseUrlInput').value = getBaseUrl();
+      document.getElementById('settingsModal').classList.remove('hidden');
+      document.getElementById('settingsModal').classList.add('flex');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+      document.getElementById('settingsModal').classList.remove('flex');
+    }
+
+    function openResultModal(data) {
+      var body = document.getElementById('resultModalBody');
+      body.innerHTML = ''
+        + '<p><strong>템플릿 ID:</strong> ' + (data.templateId || '-') + '</p>'
+        + '<p><strong>상태:</strong> ' + (data.status || 'INSPECTING') + '</p>'
+        + '<p><strong>예상 소요:</strong> 1~3 영업일</p>';
+      document.getElementById('resultModal').classList.remove('hidden');
+      document.getElementById('resultModal').classList.add('flex');
+    }
+
+    function closeResultModal() {
+      document.getElementById('resultModal').classList.add('hidden');
+      document.getElementById('resultModal').classList.remove('flex');
+    }
+
+    function switchTab(tabId) {
+      var buttons = document.querySelectorAll('.tab-btn');
+      var panels = document.querySelectorAll('.tab-panel');
+      buttons.forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+      });
+      panels.forEach(function (panel) {
+        panel.classList.add('hidden');
+      });
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function highlightVariables(text) {
+      var escaped = escapeHtml(text);
+      return escaped.replace(/#\{[^}]+\}/g, function (match) {
+        return '<span class="kakao-variable">' + match + '</span>';
+      });
+    }
+
+    function renderKakaoPreview(container, data, options) {
+      var title = data.title || '';
+      var content = data.content || '';
+      var buttons = Array.isArray(data.buttons) ? data.buttons : [];
+      var channel = (options && options.channel) || 'Bookkeeping Subscription SaaS';
+      var noTitle = options && options.noTitle;
+      var wrapperClass = (options && options.wrapperClass) || '';
+
+      var html = ''
+        + '<div class="kakao-preview-wrapper ' + wrapperClass + '">'
+        + '  <div class="kakao-bubble">'
+        + '    <div class="kakao-header"><span>🟡 알림톡 도착</span><span>kakao</span></div>'
+        + '    <div class="kakao-channel">' + escapeHtml(channel) + '</div>';
+      if (!noTitle && title) {
+        html += '<div class="kakao-title">' + escapeHtml(title) + '</div>';
+      }
+      html += ''
+        + '    <div class="kakao-divider"></div>'
+        + '    <div class="kakao-body">' + highlightVariables(content) + '</div>';
+      if (buttons.length > 0) {
+        html += '<div class="kakao-divider"></div>';
+        buttons.forEach(function (btn) {
+          html += '<div class="kakao-button">[ ' + escapeHtml(btn.name || '버튼') + ' ]</div>';
+        });
+      }
+      html += '  </div></div>';
+      container.innerHTML = html;
+    }
+
+    function parseMaybeJson(input) {
+      if (typeof input === 'string') {
+        try {
+          return JSON.parse(input);
+        } catch (e) {
+          return null;
+        }
+      }
+      return input;
+    }
+
+    async function postJson(url, body) {
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        throw new Error((data && data.message) || '요청에 실패했습니다.');
+      }
+      return data;
+    }
+
+    function ensureBaseUrl() {
+      var base = getBaseUrl();
+      if (!base) {
+        openSettingsModal();
+        throw new Error('Webhook Base URL이 설정되지 않았습니다.');
+      }
+      return base;
+    }
+
+    function upsertVariable(variables, variable) {
+      var list = Array.isArray(variables) ? variables : [];
+      var exists = list.some(function (v) { return v && v.name === variable.name; });
+      if (!exists) list.push(variable);
+      return list;
+    }
+
+    function normalizeComposeResult(result) {
+      var out = JSON.parse(JSON.stringify(result || {}));
+      out.variables = Array.isArray(out.variables) ? out.variables : [];
+      out.buttons = Array.isArray(out.buttons) ? out.buttons : [];
+      out.content = String(out.content || '');
+
+      var hasSubmit = false;
+      var hasGuide = false;
+
+      out.buttons = out.buttons.map(function (btn) {
+        var b = btn || {};
+        var name = String(b.name || '바로가기');
+        var type = String(b.type || 'WL');
+        var url = String(b.url || '').trim();
+
+        if (/가이드|안내|도움말/.test(name)) {
+          hasGuide = true;
+          url = '#{가이드링크}';
+          out.variables = upsertVariable(out.variables, {
+            name: '#{가이드링크}',
+            description: '가이드/안내 페이지 URL',
+            sample: 'https://care.biznup.com/guide/2026-tax'
+          });
+        } else if (/제출|신청|업로드|작성/.test(name)) {
+          hasSubmit = true;
+          url = '#{제출링크}';
+          out.variables = upsertVariable(out.variables, {
+            name: '#{제출링크}',
+            description: '자료 제출 페이지 URL',
+            sample: 'https://care.biznup.com/submit/abc123'
+          });
+        } else if (!/^#\{[^}]+\}$/.test(url)) {
+          out.variables = upsertVariable(out.variables, {
+            name: '#{버튼링크}',
+            description: '기타 버튼 이동 URL',
+            sample: 'https://care.biznup.com/action/abc123'
+          });
+          url = '#{버튼링크}';
+        }
+
+        return { name: name, type: type, url: url || '#{버튼링크}' };
+      });
+
+      return out;
+    }
+
+    function renderComposeResult(data) {
+      var result = parseMaybeJson(data.result || data.output || data);
+      if (!result || result.error) {
+        throw new Error((result && result.message) || '초안 생성 결과를 파싱하지 못했습니다.');
+      }
+      if (!result.templateName || !result.content || !Array.isArray(result.variables) || !result.checklist) {
+        throw new Error('AI 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      result = normalizeComposeResult(result);
+      state.composeResult = result;
+
+      document.getElementById('composeResult').classList.remove('hidden');
+      renderKakaoPreview(document.getElementById('composePreview'), {
+        title: result.title || '',
+        content: result.content || '',
+        buttons: result.buttons || []
+      });
+
+      var tbody = document.getElementById('composeVariables');
+      tbody.innerHTML = '';
+      var variables = Array.isArray(result.variables) ? result.variables : [];
+      if (variables.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-2 text-slate-500">변수가 없습니다.</td></tr>';
+      } else {
+        variables.forEach(function (v) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = ''
+            + '<td class="p-2 border-b">' + escapeHtml(v.name || '') + '</td>'
+            + '<td class="p-2 border-b">' + escapeHtml(v.description || '') + '</td>'
+            + '<td class="p-2 border-b">' + escapeHtml(v.sample || '') + '</td>';
+          tbody.appendChild(tr);
+        });
+      }
+
+      var checklistMap = {
+        noAdContent: '광고성 문구 점검',
+        validVariables: '변수 형식 점검',
+        noShortUrl: '단축 URL 미사용',
+        spellCheck: '맞춤법 점검',
+        noSensitiveInfo: '민감정보 미포함'
+      };
+      var checklist = result.checklist || {};
+      var ul = document.getElementById('composeChecklist');
+      ul.innerHTML = '';
+      Object.keys(checklistMap).forEach(function (key) {
+        var li = document.createElement('li');
+        var ok = !!checklist[key];
+        li.textContent = (ok ? '✅ ' : '❌ ') + checklistMap[key];
+        ul.appendChild(li);
+      });
+    }
+
+    function addButtonRow(name, url) {
+      var rows = document.getElementById('buttonRows');
+      var row = document.createElement('div');
+      row.className = 'grid grid-cols-12 gap-2';
+      row.innerHTML = ''
+        + '<input class="btn-name col-span-4 border border-slate-300 rounded-lg p-2" placeholder="버튼명" value="' + escapeHtml(name || '') + '">'
+        + '<input class="btn-url col-span-7 border border-slate-300 rounded-lg p-2" placeholder="https://example.com/path" value="' + escapeHtml(url || '') + '">'
+        + '<button class="remove-btn col-span-1 rounded-lg border border-red-200 text-red-500">-</button>';
+      row.querySelector('.remove-btn').addEventListener('click', function () {
+        row.remove();
+        renderSubmitPreview();
+      });
+      row.querySelector('.btn-name').addEventListener('input', renderSubmitPreview);
+      row.querySelector('.btn-url').addEventListener('input', renderSubmitPreview);
+      rows.appendChild(row);
+    }
+
+    function getButtonsFromForm() {
+      var rows = Array.from(document.querySelectorAll('#buttonRows > div'));
+      return rows
+        .map(function (row) {
+          var name = row.querySelector('.btn-name').value.trim();
+          var url = row.querySelector('.btn-url').value.trim();
+          if (!name || !url) return null;
+          return { name: name, type: 'WL', url: url };
+        })
+        .filter(Boolean);
+    }
+
+    function renderSubmitPreview() {
+      renderKakaoPreview(document.getElementById('submitPreview'), {
+        title: '',
+        content: document.getElementById('submitContent').value || '',
+        buttons: getButtonsFromForm()
+      }, { noTitle: true });
+    }
+
+    function fillSubmitFormFromDraft(data) {
+      document.getElementById('submitName').value = data.templateName || '';
+      document.getElementById('submitContent').value = data.content || '';
+      if (data.categoryCode) {
+        document.getElementById('submitCategory').value = data.categoryCode;
+      }
+      document.getElementById('buttonRows').innerHTML = '';
+      var buttons = Array.isArray(data.buttons) ? data.buttons : [];
+      buttons.forEach(function (btn) {
+        addButtonRow(btn.name || '', btn.url || '');
+      });
+      renderSubmitPreview();
+    }
+
+    function renderRejectedList() {
+      var templates = state.rejectedList || [];
+      var list = document.getElementById('rejectedList');
+      list.innerHTML = '';
+      if (templates.length === 0) {
+        list.innerHTML = '<div class="bg-white border border-slate-200 rounded-xl p-4 text-slate-500">반려 템플릿이 없습니다.</div>';
+        return;
+      }
+
+      templates.forEach(function (item, index) {
+        var itemKey = item.templateId || ('idx-' + index);
+        var analyzed = state.rejectedAnalysisMap[itemKey] || null;
+        var showTemplate = analyzed || {
+          templateId: item.templateId || '',
+          templateName: item.templateName || '',
+          originalContent: item.originalContent || '',
+          rejectReason: item.rejectReason || '반려 사유 정보 없음',
+          fixedTitle: '',
+          fixedContent: '',
+          changes: [],
+          buttons: []
+        };
+        var isExpanded = state.rejectedExpandedId === itemKey;
+        var card = document.createElement('div');
+        card.className = 'bg-white border border-slate-200 rounded-xl';
+        card.innerHTML = ''
+          + '<div class="w-full p-4 flex items-start justify-between gap-3">'
+          + '  <div>'
+          + '    <button class="toggle-btn text-left">'
+          + '      <div class="font-semibold">' + escapeHtml(item.templateName || ('템플릿 ' + (index + 1))) + '</div>'
+          + '      <div class="text-xs text-slate-500 mt-1">템플릿 ID: ' + escapeHtml(item.templateId || '-') + '</div>'
+          + '    </button>'
+          + '  </div>'
+          + '  <div class="flex items-center gap-2">'
+          + '    <span class="text-xs px-2 py-1 rounded bg-red-100 text-red-700">' + escapeHtml((showTemplate.rejectReason || '반려 사유 없음').slice(0, 80)) + '</span>'
+          + '    <button class="analyze-btn-inline px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs hover:bg-slate-700">선택 템플릿 분석하기</button>'
+          + '  </div>'
+          + '</div>'
+          + '<div class="detail border-t border-slate-200 p-4 space-y-4' + (isExpanded ? '' : ' hidden') + '">'
+          + '  <div class="text-sm text-slate-700"><strong>반려 사유:</strong> ' + escapeHtml(showTemplate.rejectReason || '사유 없음') + '</div>'
+          + '  <div class="text-sm text-slate-700"><strong>문제점 분석:</strong> ' + escapeHtml(showTemplate.problemAnalysis || '선택 후 분석 결과가 표시됩니다.') + '</div>'
+          + '  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">'
+          + '    <div><h4 class="font-semibold mb-2 text-red-600">기존</h4><div class="old-preview"></div></div>'
+          + '    <div><h4 class="font-semibold mb-2 text-emerald-600">수정안</h4><div class="new-preview"></div></div>'
+          + '  </div>'
+          + '  <div>'
+          + '    <h4 class="font-semibold mb-2">변경 포인트</h4>'
+          + '    <ul class="changes text-sm space-y-1"></ul>'
+          + '  </div>'
+          + '  <div class="flex gap-2">'
+          + '    <button class="request-btn px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500">수정본으로 검수 요청</button>'
+          + '  </div>'
+          + '</div>';
+
+        var header = card.querySelector('.toggle-btn');
+        header.addEventListener('click', function () {
+          state.rejectedExpandedId = (state.rejectedExpandedId === itemKey) ? '' : itemKey;
+          renderRejectedList();
+        });
+
+        renderKakaoPreview(card.querySelector('.old-preview'), {
+          title: '',
+          content: showTemplate.originalContent || '',
+          buttons: []
+        }, { noTitle: true, wrapperClass: 'border-2 border-red-300' });
+
+        renderKakaoPreview(card.querySelector('.new-preview'), {
+          title: showTemplate.fixedTitle || '',
+          content: showTemplate.fixedContent || '분석하기 버튼을 눌러 반려 사유 기반 수정안을 생성해 주세요.',
+          buttons: showTemplate.buttons || []
+        }, { wrapperClass: 'border-2 border-emerald-300' });
+
+        var changes = card.querySelector('.changes');
+        if (Array.isArray(showTemplate.changes) && showTemplate.changes.length > 0) {
+          showTemplate.changes.forEach(function (change) {
+            var li = document.createElement('li');
+            li.textContent = '기존: "' + (change.before || '') + '" → 수정: "' + (change.after || '') + '"';
+            changes.appendChild(li);
+          });
+        } else {
+          changes.innerHTML = '<li>분석 전입니다. 선택 템플릿 분석하기를 눌러 주세요.</li>';
+        }
+
+        card.querySelector('.analyze-btn-inline').addEventListener('click', function () {
+          analyzeRejectedTemplate(itemKey, item.templateId);
+        });
+        card.querySelector('.request-btn').addEventListener('click', function () {
+          var useTemplate = state.rejectedAnalysisMap[itemKey] || showTemplate;
+          fillSubmitFormFromDraft({
+            templateName: useTemplate.templateName || '',
+            categoryCode: 'NOTICE',
+            content: useTemplate.fixedContent || '',
+            buttons: useTemplate.buttons || []
+          });
+          switchTab('submit');
+        });
+        list.appendChild(card);
+      });
+    }
+
+    async function analyzeRejectedTemplate(itemKey, templateId) {
+      try {
+        if (!templateId) {
+          showToast('템플릿 ID가 없어 분석할 수 없습니다.');
+          return;
+        }
+        state.rejectedExpandedId = itemKey;
+        var base = ensureBaseUrl();
+        var data = await postJson(base + '/alimtalk/rejected', { templateId: templateId });
+        var parsed = parseMaybeJson(data.result || data.output || data);
+        if (!parsed || parsed.error) {
+          throw new Error((parsed && parsed.message) || '반려 분석에 실패했습니다.');
+        }
+        if (parsed.mode !== 'analysis' || !parsed.template) {
+          throw new Error('분석 응답 형식이 올바르지 않습니다.');
+        }
+        state.rejectedAnalysisMap[itemKey] = parsed.template;
+        renderRejectedList();
+      } catch (error) {
+        showToast(error.message || '반려 분석 중 오류가 발생했습니다.');
+      }
+    }
+
+    async function onCompose() {
+      try {
+        var keyword = document.getElementById('composeKeyword').value.trim();
+        if (!keyword) {
+          showToast('키워드를 입력해 주세요.');
+          return;
+        }
+        var base = ensureBaseUrl();
+        var loading = document.getElementById('composeLoading');
+        loading.classList.remove('hidden');
+        loading.classList.add('flex');
+        var data = await postJson(base + '/alimtalk/compose', { keyword: keyword });
+        if (!data || Object.keys(data).length === 0) {
+          throw new Error('n8n에서 빈 응답이 왔습니다. 워크플로우를 최신 파일로 다시 import 해주세요.');
+        }
+        renderComposeResult(data);
+      } catch (error) {
+        showToast(error.message || '초안 생성 중 오류가 발생했습니다.');
+      } finally {
+        var loading = document.getElementById('composeLoading');
+        loading.classList.add('hidden');
+        loading.classList.remove('flex');
+      }
+    }
+
+    async function onLoadRejected() {
+      try {
+        var base = ensureBaseUrl();
+        var loading = document.getElementById('rejectedLoading');
+        loading.classList.remove('hidden');
+        loading.classList.add('flex');
+        var data = await postJson(base + '/alimtalk/rejected', {});
+        if (!data || Object.keys(data).length === 0) {
+          throw new Error('n8n에서 빈 응답이 왔습니다. 워크플로우를 최신 파일로 다시 import 해주세요.');
+        }
+        var parsed = parseMaybeJson(data.result || data.output || data);
+        if (!parsed || parsed.error) {
+          throw new Error((parsed && parsed.message) || '반려 목록을 불러오지 못했습니다.');
+        }
+        if (parsed.mode !== 'list' || !Array.isArray(parsed.templates)) {
+          throw new Error('반려 목록 응답 형식이 올바르지 않습니다.');
+        }
+        state.rejectedList = parsed.templates;
+        state.rejectedAnalysisMap = {};
+        state.rejectedExpandedId = '';
+        renderRejectedList();
+      } catch (error) {
+        showToast(error.message || '반려 목록 조회 중 오류가 발생했습니다.');
+      } finally {
+        var loading = document.getElementById('rejectedLoading');
+        loading.classList.add('hidden');
+        loading.classList.remove('flex');
+      }
+    }
+
+    async function onSubmitTemplate() {
+      try {
+        var base = ensureBaseUrl();
+        var payload = {
+          name: document.getElementById('submitName').value.trim(),
+          categoryCode: document.getElementById('submitCategory').value,
+          content: document.getElementById('submitContent').value,
+          buttons: getButtonsFromForm()
+        };
+        if (!payload.name || !payload.content || !payload.categoryCode) {
+          showToast('템플릿명, 카테고리, 본문을 입력해 주세요.');
+          return;
+        }
+        var data = await postJson(base + '/alimtalk/submit', payload);
+        if (!data || Object.keys(data).length === 0) {
+          throw new Error('n8n에서 빈 응답이 왔습니다. 워크플로우를 최신 파일로 다시 import 해주세요.');
+        }
+        openResultModal(data);
+      } catch (error) {
+        showToast(error.message || '검수 요청 제출 중 오류가 발생했습니다.');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          switchTab(btn.getAttribute('data-tab'));
+        });
+      });
+      document.getElementById('composeBtn').addEventListener('click', onCompose);
+      document.getElementById('loadRejectedBtn').addEventListener('click', onLoadRejected);
+      document.getElementById('submitBtn').addEventListener('click', onSubmitTemplate);
+      document.getElementById('addButtonRowBtn').addEventListener('click', function () { addButtonRow('', ''); });
+      document.getElementById('toSubmitBtn').addEventListener('click', function () {
+        if (!state.composeResult) return;
+        fillSubmitFormFromDraft(state.composeResult);
+        switchTab('submit');
+      });
+
+      document.getElementById('submitContent').addEventListener('input', renderSubmitPreview);
+      document.getElementById('submitCategory').addEventListener('change', renderSubmitPreview);
+      document.getElementById('openSettingsBtn').addEventListener('click', openSettingsModal);
+      document.getElementById('closeModalBtn').addEventListener('click', closeSettingsModal);
+      document.getElementById('saveBaseUrlBtn').addEventListener('click', function () {
+        var url = document.getElementById('baseUrlInput').value.trim().replace(/\/+$/, '');
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          showToast('http:// 또는 https:// 로 시작해야 합니다.');
+          return;
+        }
+        setBaseUrl(url);
+        closeSettingsModal();
+        showToast('Webhook Base URL이 저장되었습니다.');
+      });
+
+      document.getElementById('closeResultModalBtn').addEventListener('click', closeResultModal);
+      document.getElementById('resultModal').addEventListener('click', function (e) {
+        if (e.target.id === 'resultModal') closeResultModal();
+      });
+      document.getElementById('settingsModal').addEventListener('click', function (e) {
+        if (e.target.id === 'settingsModal') closeSettingsModal();
+      });
+
+      addButtonRow('', '');
+      renderSubmitPreview();
+
+      showToast('현재 환경에서는 URL이 탭 세션 동안만 유지됩니다.');
+      if (!getBaseUrl()) {
+        openSettingsModal();
+      }
+    });
+  </script>
+</body>
+</html>
