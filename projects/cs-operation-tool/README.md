@@ -2,6 +2,10 @@
 
 콜 후처리를 자동화하는 사내 GAS 웹 앱. 통화 녹취를 Whisper로 전사하고, LLM으로 화자를 분리한 뒤, Pipedrive Activity API로 자동 등록합니다.
 
+![CS Operation Tool 화면](../../assets/screenshots/cs-operation-tool.png)
+
+> 담당자 정보 → Drive 녹취 자동 조회 → Whisper 전사·LLM 화자 분리 → 상담 요약 → CRM 자동 등록 및 문자 템플릿 발송까지 원-스톱 처리 (개인정보·브랜드명·URL은 ISMS 규정에 따라 마스킹)
+
 ## 문제
 세일즈 콜 이후 CRM에 상담 내용을 기록하는 작업이 병목이었습니다. 콜 1건당 사후 처리에 평균 3분 30초가 소요되고 있었습니다.
 
