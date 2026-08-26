@@ -1,0 +1,31 @@
+# Google Apps Script clasp settings (contains scriptId)
+.clasp.json
+.claspignore
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+*.secret
+credentials.json
+service-account*.json
+
+# Local IDE
+.vscode/
+.idea/
+
+# Sensitive data snapshots
+*_export.csv
+*_backup_*.csv
+raw_data/
+
+# Company internal PDFs (originals)
+*_원본.pdf
+[Z21-*].pdf
+
+# Build artifacts
+node_modules/
+dist/
+build/

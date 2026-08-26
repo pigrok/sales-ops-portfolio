@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipedrive 필터 오류 대시보드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: #f0f2f5; color: #1c1e21; font-size: 13px; }
+
+    .header { background: #1565c0; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .header-title { font-size: 16px; font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .updated-at { font-size: 12px; opacity: 0.75; }
+    .btn-refresh { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .btn-refresh:hover:not(:disabled) { background: rgba(255,255,255,0.25); }
+    .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .tabs { background: white; border-bottom: 1px solid #ddd; padding: 0 24px; display: flex; }
+    .tab { padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; color: #65676b; font-weight: 500; transition: all 0.15s; }
+    .tab:hover { color: #1565c0; }
+    .tab.active { color: #1565c0; border-bottom-color: #1565c0; }
+    .tab-count { background: #e8eaed; color: #65676b; border-radius: 10px; padding: 1px 7px; font-size: 11px; margin-left: 4px; }
+    .tab.active .tab-count { background: #e3f2fd; color: #1565c0; }
+
+    .content { padding: 20px 24px; }
+
+    .table-wrap { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #1565c0; }
+    th { color: white; padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-ok td { background: #f6fff8; }
+    tr.row-unsent td { background: #fff5f5; }
+    tr.row-ok:hover td { background: #edfff1; }
+    tr.row-unsent:hover td { background: #ffeded; }
+    tr:not(.row-ok):not(.row-unsent):hover td { background: #f8faff; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-sent  { background: #e8f5e9; color: #2e7d32; }
+    .badge-unsent { background: #ffebee; color: #c62828; }
+    .badge-unknown { background: #fff8e1; color: #e65100; }
+
+    .deal-link { color: #1565c0; text-decoration: none; font-weight: 500; }
+    .deal-link:hover { text-decoration: underline; }
+
+    .btn-retrigger { background: #1565c0; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .btn-retrigger:hover:not(:disabled) { background: #0d47a1; }
+    .btn-retrigger:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-retrigger.done  { background: #2e7d32; }
+    .btn-retrigger.fail  { background: #c62828; }
+
+    .state-box { padding: 60px 24px; text-align: center; color: #65676b; }
+    .state-box .icon { font-size: 32px; margin-bottom: 12px; }
+    .state-box .sub { font-size: 12px; color: #999; margin-top: 6px; }
+    .state-error { color: #c62828; }
+
+    .phone-cell { font-family: monospace; color: #555; }
+    .time-cell  { color: #555; white-space: nowrap; }
+    .err-text   { color: #c62828; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">📋 Pipedrive 필터 오류 대시보드</div>
+  <div class="header-right">
+    <span class="updated-at" id="updatedAt"></span>
+    <button class="btn-refresh" id="btnRefresh" type="button" onclick="loadData()">새로고침</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabsEl"></div>
+
+<div class="content">
+  <div id="mainContent">
+    <div class="state-box">
+      <div class="icon">⏳</div>
+      데이터를 불러오는 중입니다
+      <div class="sub">딜 수에 따라 30초~1분 정도 소요될 수 있어요</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let data = [];
+  let activeTab = 0;
+
+  function loadData() {
+    const btn = document.getElementById('btnRefresh');
+    btn.disabled = true;
+    btn.textContent = '불러오는 중...';
+    setContent('<div class="state-box"><div class="icon">⏳</div>데이터를 불러오는 중입니다<div class="sub">딜 수에 따라 30초~1분 소요될 수 있어요</div></div>');
+    document.getElementById('tabsEl').innerHTML = '';
+    document.getElementById('updatedAt').textContent = '';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        data = result;
+        btn.disabled = false;
+        btn.textContent = '새로고침';
+        document.getElementById('updatedAt').textContent =
+          '마지막 갱신: ' + new Date().toLocaleTimeString('ko-KR');
+        renderTabs();
+        renderContent(activeTab);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = '새로고침';
+        setContent('<div class="state-box state-error"><div class="icon">⚠️</div>' + err.message + '</div>');
+      })
+      .getDashboardData();
+  }
+
+  function setContent(html) {
+    document.getElementById('mainContent').innerHTML = html;
+  }
+
+  function renderTabs() {
+    document.getElementById('tabsEl').innerHTML = data.map((d, i) => {
+      const count = d.deals ? d.deals.length : 0;
+      return '<div class="tab' + (i === activeTab ? ' active' : '') + '" onclick="switchTab(' + i + ')">' +
+        d.label + ' <span class="tab-count">' + count + '</span></div>';
+    }).join('');
+  }
+
+  function switchTab(idx) {
+    activeTab = idx;
+    renderTabs();
+    renderContent(idx);
+  }
+
+  function fmtTime(ts) {
+    if (!ts) return '-';
+    try {
+      return new Date(ts).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch(e) { return ts; }
+  }
+
+  function fmtPhone(phone) {
+    if (!phone) return '-';
+    if (phone.length === 11) return phone.slice(0,3) + '-' + phone.slice(3,7) + '-' + phone.slice(7);
+    return phone;
+  }
+
+  function renderContent(idx) {
+    if (!data.length) return;
+    const filter = data[idx];
+
+    if (filter.error && !filter.deals.length) {
+      setContent('<div class="state-box state-error"><div class="icon">⚠️</div>' + filter.error + '</div>');
+      return;
+    }
+    if (!filter.deals || filter.deals.length === 0) {
+      setContent('<div class="state-box"><div class="icon">✅</div>해당 필터에 딜이 없습니다<div class="sub">오늘은 모두 정상 발송되었어요</div></div>');
+      return;
+    }
+
+    const rows = filter.deals.map(function(deal) {
+      if (deal.error) {
+        return '<tr><td><a class="deal-link" href="' + (deal.pipedriveUrl||'#') + '" target="_blank">' + esc(deal.title) + '</a></td>' +
+          '<td colspan="6"><span class="err-text">오류: ' + esc(deal.error) + '</span></td></tr>';
+      }
+
+      var rowCls = deal.solapiSent === true ? ' class="row-ok"' : deal.solapiSent === false ? ' class="row-unsent"' : '';
+      var typeLabel = deal.solapiType ? ' <span style="font-size:10px;opacity:0.7">(' + deal.solapiType + ')</span>' : '';
+      var badge  = deal.solapiSent === true
+        ? '<span class="badge badge-sent">✓ 발송됨</span>' + typeLabel
+        : deal.solapiSent === false
+          ? '<span class="badge badge-unsent">✗ 미발송</span>'
+          : '<span class="badge badge-unknown">확인불가</span>' + (deal.solapiError ? '<br><span class="err-text">' + esc(deal.solapiError) + '</span>' : '');
+
+      var btnId  = 'btn_' + deal.id;
+      var btnDis = deal.solapiSent === true ? ' disabled' : '';
+
+      return '<tr' + rowCls + '>' +
+        '<td><a class="deal-link" href="' + deal.pipedriveUrl + '" target="_blank">' + esc(deal.title) + '</a></td>' +
+        '<td>' + esc(deal.currentStageName) + '</td>' +
+        '<td class="time-cell">' + fmtTime(deal.stageEntryTime) + '</td>' +
+        '<td class="phone-cell">' + fmtPhone(deal.phone) + '</td>' +
+        '<td>' + badge + '</td>' +
+        '<td class="time-cell">' + fmtTime(deal.solapiTime) + '</td>' +
+        '<td><button type="button" id="' + btnId + '" class="btn-retrigger"' + btnDis +
+          ' onclick="retrigger(' + deal.id + ',' + idx + ',\'' + btnId + '\')">재발송</button></td>' +
+        '</tr>';
+    }).join('');
+
+    setContent(
+      '<div class="table-wrap"><table>' +
+      '<thead><tr><th>딜 이름</th><th>현재 단계</th><th>단계 진입 시각</th><th>연락처</th><th>솔라피 발송</th><th>발송 시각</th><th>재발송</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table></div>'
+    );
+  }
+
+  function retrigger(dealId, filterIdx, btnId) {
+    if (!confirm('단계를 이동하여 알림톡을 재발송하시겠습니까?\n(트리거 단계로 이동 후 복귀됩니다)')) return;
+    var btn = document.getElementById(btnId);
+    btn.textContent = '처리 중...';
+    btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function() {
+        btn.textContent = '완료 ✓';
+        btn.classList.add('done');
+      })
+      .withFailureHandler(function(err) {
+        btn.textContent = '실패';
+        btn.classList.add('fail');
+        btn.disabled = false;
+        alert('오류: ' + err.message);
+      })
+      .retriggerAlimtalk(dealId, filterIdx);
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  loadData();
+</script>
+</body>
+</html>

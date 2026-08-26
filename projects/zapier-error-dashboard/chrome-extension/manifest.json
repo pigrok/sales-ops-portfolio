@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Zapier Cookie Sync - Zent",
+  "version": "1.1",
+  "description": "Zapier 에러를 자동 감지해 Error Dashboard에 전송",
+  "permissions": [
+    "cookies",
+    "alarms",
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://zapier.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://zapier.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://script.google.com/*", "https://script.googleusercontent.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Zapier Cookie Sync"
+  }
+}

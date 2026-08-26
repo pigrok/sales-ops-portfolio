@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f8f9fa; font-family: -apple-system,'Segoe UI',Helvetica,sans-serif; font-size: 14px; color: #1a1a1a; }
+
+    /* ── 헤더 ── */
+    .page-header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 20px 32px 0; }
+    .page-title { font-size: 22px; font-weight: 700; color: #111; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .page-tabs { display: flex; gap: 0; }
+    .page-tab { padding: 8px 0; margin-right: 24px; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
+    .page-tab.active { color: #111; border-bottom-color: #111; }
+
+    /* ── 웹훅 상태 ── */
+    .webhook-bar { background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 6px 32px; font-size: 12px; color: #166534; display: flex; align-items: center; gap: 10px; }
+    .webhook-bar.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .webhook-log-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; margin: 12px 32px; }
+
+    /* ── 통계 ── */
+    .stats-bar { display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e5e7eb; }
+    .stat-item { padding: 14px 28px; display: flex; flex-direction: column; border-right: 1px solid #e5e7eb; }
+    .stat-item:last-child { border-right: none; }
+    .stat-val { font-size: 22px; font-weight: 700; color: #111; line-height: 1; }
+    .stat-lbl { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+    .stat-item.s-red .stat-val { color: #dc2626; }
+    .stat-item.s-amber .stat-val { color: #d97706; }
+    .stat-item.s-purple .stat-val { color: #7c3aed; }
+    .stat-item.s-top .stat-val { font-size: 13px; padding-top: 5px; }
+
+    /* ── 필터 ── */
+    .filter-bar { padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff; border-bottom: 1px solid #e5e7eb; }
+    .search-wrap { position: relative; }
+    .search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; pointer-events: none; }
+    .search-wrap input { padding: 7px 12px 7px 32px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
+    .search-wrap input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+    .filter-chip { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; background: #fff; color: #374151; display: flex; align-items: center; gap: 5px; transition: .12s; }
+    .filter-chip:hover { background: #f9fafb; }
+    .filter-chip.active { background: #eef2ff; border-color: #a5b4fc; color: #4338ca; }
+    .refresh-btn { padding: 7px 14px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; cursor: pointer; color: #374151; margin-left: auto; }
+    .refresh-btn:hover { background: #f9fafb; }
+    .cnt-txt { font-size: 12px; color: #6b7280; white-space: nowrap; }
+
+    /* ── 조회 기간 입력 (필터 바 인라인) ── */
+    .filter-date-range { display: flex; align-items: center; gap: 4px; }
+    .filter-date-input { padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; color: #374151; outline: none; cursor: pointer; width: 126px; }
+    .filter-date-input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.1); }
+    .filter-date-input.has-val { border-color: #a5b4fc; background: #eef2ff; color: #4338ca; }
+    .filter-date-sep { font-size: 12px; color: #9ca3af; }
+    .clear-date-btn { padding: 4px 7px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 11px; cursor: pointer; background: #fff; color: #9ca3af; display: none; }
+    .clear-date-btn:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+    .clear-date-btn.show { display: inline-block; }
+
+    /* ── Zapier 과거 수집 바 (API 호출, 조회 필터와 구분) ── */
+    .zapier-fetch-bar { padding: 10px 32px; background: #f0f9ff; border-bottom: 2px solid #bae6fd; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .zapier-fetch-label { display: flex; flex-direction: column; gap: 1px; min-width: 0; margin-right: 4px; }
+    .zapier-fetch-title { font-size: 12px; font-weight: 700; color: #0369a1; white-space: nowrap; }
+    .zapier-fetch-hint { font-size: 10px; color: #7dd3fc; white-space: nowrap; }
+    .zapier-fetch-bar input[type=date] { padding: 5px 9px; border: 1px solid #bae6fd; border-radius: 6px; font-size: 12px; color: #0369a1; background: #fff; outline: none; cursor: pointer; }
+    .zapier-fetch-bar input[type=date]:focus { border-color: #38bdf8; }
+    .zapier-fetch-sep { font-size: 12px; color: #7dd3fc; }
+    .zapier-fetch-btn { padding: 6px 14px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .zapier-fetch-btn:hover { background: #0369a1; }
+    .zapier-fetch-btn:disabled { background: #7dd3fc; cursor: not-allowed; }
+    .zapier-fetch-info { font-size: 11px; color: #0369a1; }
+
+    /* ── 상태 탭 ── */
+    .status-bar { padding: 0 32px; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; }
+    .stab { padding: 10px 4px; margin-right: 20px; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 6px; position: relative; }
+    .stab:hover { color: #374151; }
+    .stab.active { color: #111; border-bottom-color: #111; font-weight: 600; }
+    .stab .cnt { background: #f3f4f6; color: #6b7280; padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+    .stab.active .cnt { background: #e0e7ff; color: #4338ca; }
+
+    /* ── 서브 탭 ── */
+    .subtab-bar { padding: 8px 32px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 6px; }
+    .subtab { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; transition: .12s; }
+    .subtab:hover { border-color: #d1d5db; color: #374151; }
+    .subtab.active { background: #eef2ff; color: #4338ca; border-color: #a5b4fc; }
+    .subtab.st-필요.active  { background: #fce7f3; color: #831843; border-color: #f9a8d4; }
+    .subtab.st-완료.active  { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .subtab.st-진행중.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .subtab.st-qa-완료.active { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .subtab.st-qa-실패.active { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+    /* ── 벌크 바 ── */
+    .bulk-bar { padding: 10px 32px; background: #eef2ff; border-bottom: 1px solid #c7d2fe; display: flex; align-items: center; gap: 10px; }
+    .bulk-count { font-size: 13px; font-weight: 600; color: #4338ca; }
+    .bulk-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #374151; display: flex; align-items: center; gap: 5px; }
+    .bulk-btn.play { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .bulk-btn.play:hover { background: #4338ca; }
+    .bulk-btn:not(.play):hover { background: #f9fafb; }
+    .bulk-btn.purge { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .bulk-btn.purge:hover { background: #b91c1c; }
+
+    /* ── 카드 리스트 ── */
+    .list-wrap { padding: 16px 32px; }
+    .err-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: flex-start; padding: 16px; gap: 14px; transition: border-color .15s, box-shadow .15s; }
+    .err-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 8px rgba(99,102,241,.08); }
+    .err-card.selected { background: #f5f3ff; border-color: #a5b4fc; }
+    .err-card.is-done { opacity: .5; }
+
+    .card-cb input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #6366f1; margin-top: 2px; }
+
+    .card-status { display: flex; align-items: center; gap: 5px; min-width: 74px; padding-top: 1px; }
+    .status-icon { font-size: 15px; }
+    .status-text { font-size: 12px; font-weight: 600; }
+    .st-신규 .status-text { color: #1d4ed8; }
+    .tab-n-badge { position: absolute; top: 3px; right: -8px; min-width: 15px; height: 15px; font-size: 9px; font-weight: 800; color: #fff; background: #ef4444; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 1px 4px rgba(0,0,0,.25); border: 1.5px solid #fff; line-height: 1; }
+    .st-재실행 .status-text, .st-재실행-필요 .status-text { color: #d97706; }
+    .st-재실행-완료 .status-text { color: #15803d; }
+    .st-보류 .status-text { color: #b45309; }
+    .st-삭제 .status-text, .st-삭제-필요 .status-text { color: #6b7280; }
+
+
+    .card-main { flex: 1; min-width: 0; }
+    .card-zap { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
+    .card-step { display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; padding: 1px 7px; border-radius: 4px; margin-right: 6px; font-family: monospace; }
+    .card-err { font-family: monospace; font-size: 12px; color: #dc2626; }
+    .card-time { font-size: 11px; color: #9ca3af; margin-top: 5px; }
+    .card-refund { font-size: 11px; color: #7c3aed; background: #f5f3ff; padding: 1px 7px; border-radius: 4px; margin-left: 6px; }
+    .badge-new { font-size: 10px; font-weight: 700; color: #fff; background: #2563eb; padding: 1px 6px; border-radius: 10px; margin-left: 6px; letter-spacing: 0.3px; vertical-align: middle; }
+
+    .expand-box { border-radius: 6px; font-size: 12px; white-space: pre-line; line-height: 1.6; overflow: hidden; max-height: 0; opacity: 0; padding: 0 12px; margin-top: 0; transition: max-height .3s ease, opacity .2s ease, padding .2s, margin .2s; }
+    .expand-box.qa { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .expand-box.ai { background: #f0f9ff; border: 1px solid #bae6fd; color: #0c4a6e; }
+    .expand-box.open { max-height: 600px; opacity: 1; padding: 8px 12px; margin-top: 6px; }
+    .expand-toggle { font-size: 11px; color: #6366f1; cursor: pointer; background: none; border: none; padding: 3px 0 0; display: block; }
+    .qa-pending-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #6366f1; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 999px; padding: 2px 9px; margin-top: 5px; }
+    .qa-spinner { width: 10px; height: 10px; border: 2px solid #c7d2fe; border-top-color: #6366f1; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .qa-running-wrap { margin-top: 6px; }
+    .qa-running-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4f46e5; background: #eef2ff; border: 1px solid #a5b4fc; border-radius: 999px; padding: 3px 10px; }
+    .qa-running-pct { font-weight: 700; color: #4338ca; min-width: 30px; text-align: right; }
+    .qa-bar-track { width: 140px; height: 4px; background: #e0e7ff; border-radius: 999px; overflow: hidden; margin-top: 5px; }
+    .qa-bar-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 999px; transition: width .9s linear; }
+    .qa-action-bar { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #bbf7d0; flex-wrap: wrap; }
+    .qa-recommend-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .qa-recommend-badge.del  { background: #fef9c3; color: #713f12; }
+    .qa-recommend-badge.rerun { background: #fce7f3; color: #831843; }
+    .qa-recommend-badge.hold { background: #f3f4f6; color: #374151; }
+    .qa-act-btn { font-size: 11px; padding: 3px 10px; border-radius: 5px; border: 1px solid; cursor: pointer; font-weight: 600; }
+    .qa-act-btn.del-btn  { background: #fef9c3; border-color: #fcd34d; color: #78350f; }
+    .qa-act-btn.rerun-btn { background: #fce7f3; border-color: #f9a8d4; color: #831843; }
+    .qa-act-btn.del-btn:hover  { background: #fef08a; }
+    .qa-act-btn.rerun-btn:hover { background: #fbcfe8; }
+    .qa-verdict-badge { font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 999px; vertical-align: middle; margin-right: 4px; }
+    .qa-verdict-badge.v-삭제  { background: #fef9c3; color: #713f12; border: 1px solid #fcd34d; }
+    .qa-verdict-badge.v-재실행 { background: #fce7f3; color: #831843; border: 1px solid #f9a8d4; }
+    .qa-verdict-badge.v-보류  { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+
+    .card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 1px; }
+    .ca-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #e5e7eb; background: #fff; color: #374151; white-space: nowrap; transition: .12s; }
+    .ca-btn:hover { background: #f9fafb; }
+    .ca-btn.replay { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .ca-btn.replay:hover { background: #4338ca; }
+    .ca-btn.qa-btn { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .ca-btn.qa-btn:hover { background: #dcfce7; }
+    .ca-btn.hold-btn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .ca-btn.done-btn { background: #f9fafb; color: #6b7280; }
+    .arrow-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; color: #6b7280; font-size: 15px; text-decoration: none; flex-shrink: 0; }
+    .arrow-btn:hover { background: #f9fafb; color: #111; }
+
+    /* ── 상태 서브탭 ── */
+    .stab-sub-row { padding: 0 32px 0 52px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0; }
+    .stab-sub { padding: 6px 4px; margin-right: 16px; font-size: 12px; font-weight: 500; color: #9ca3af; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+    .stab-sub:hover { color: #374151; }
+    .stab-sub.active-sub { color: #4338ca; border-bottom-color: #6366f1; font-weight: 600; }
+    .stab-sub.active-sub .cnt { background: #e0e7ff; color: #4338ca; }
+    .stab-sub .cnt { background: #f3f4f6; color: #6b7280; padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+    .stab-sub.s-qa-fail { color: #dc2626; }
+    .stab-sub.s-qa-fail.active-sub { color: #dc2626; border-bottom-color: #dc2626; }
+    .stab-sub.s-qa-fail.active-sub .cnt { background: #fee2e2; color: #dc2626; }
+    .stab.stab-group::after { content: ' ▾'; font-size: 9px; color: #9ca3af; margin-left: 1px; }
+    /* ── 새 상태 CSS ── */
+    .st-재실행필요 .status-text { color: #15803d; }
+    .st-재실행완료 .status-text { color: #6b7280; }
+    .st-삭제필요   .status-text { color: #6b7280; }
+    /* ── 삭제완료 카드 ── */
+    .del-card { background: #fff; border: 1px solid #fecaca; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: flex-start; padding: 16px; gap: 14px; }
+    .del-badge { background: #fee2e2; color: #dc2626; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+
+    /* ── 기타 ── */
+    .spinner-wrap { text-align: center; padding: 60px; color: #9ca3af; }
+    .empty-wrap   { text-align: center; padding: 60px; color: #9ca3af; }
+    .spin { width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 스켈레톤 새로고침 ── */
+    .list-refresh-bar { display: none; align-items: center; gap: 8px; padding: 6px 32px; background: #f5f3ff; border-bottom: 1px solid #e0e7ff; font-size: 12px; color: #6366f1; }
+    .list-refresh-bar.show { display: flex; }
+    .mini-spin { width: 14px; height: 14px; border: 2px solid #c7d2fe; border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+    .err-card.skeleton { pointer-events: none; }
+    .err-card.skeleton * { color: transparent !important; background: #f3f4f6; border-color: transparent !important; border-radius: 4px; }
+    @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .err-card.skeleton { animation: shimmer 1.2s ease-in-out infinite; }
+
+    /* ── 토스트 ── */
+    .toast-wrap { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,.12); max-width: 340px; pointer-events: all; display: flex; align-items: flex-start; gap: 10px; transition: opacity .3s, transform .3s; }
+    .toast.t-ok   { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .toast.t-err  { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .toast.t-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .toast.t-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .toast-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .toast-body { flex: 1; line-height: 1.5; }
+    .toast-close { cursor: pointer; font-size: 14px; color: inherit; opacity: .5; flex-shrink: 0; }
+    .toast-close:hover { opacity: 1; }
+
+    /* ── 확인 다이얼로그 ── */
+    .confirm-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+    .confirm-box { background: #fff; border-radius: 12px; padding: 24px 28px; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .confirm-title { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+    .confirm-msg { font-size: 13px; color: #6b7280; margin-bottom: 20px; line-height: 1.6; white-space: pre-line; }
+    .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .confirm-btn { padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .confirm-btn.cancel  { background: #f3f4f6; color: #374151; }
+    .confirm-btn.danger  { background: #dc2626; color: #fff; }
+    .confirm-btn.confirm { background: #4f46e5; color: #fff; }
+
+    /* ── 모달 ── */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; border-radius: 12px; padding: 28px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+    .modal-desc  { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+    .modal-input { width: 100%; padding: 9px 13px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 12px; }
+    .modal-input:focus { border-color: #6366f1; }
+    .modal-actions { display: flex; gap: 8px; }
+    .modal-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .modal-btn.confirm { background: #4f46e5; color: #fff; }
+    .modal-btn.confirm:hover { background: #4338ca; }
+    .modal-btn.cancel  { background: #f3f4f6; color: #374151; }
+    .replay-option { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1.5px solid #e5e7eb; border-radius: 10px; cursor: pointer; background: #fff; width: 100%; text-align: left; margin-bottom: 10px; transition: .15s; }
+    .replay-option:hover { border-color: #6366f1; background: #f5f3ff; }
+    .replay-icon { font-size: 22px; }
+    .replay-label { font-weight: 600; font-size: 14px; }
+    .replay-desc  { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ── 토스트 컨테이너 ── -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ── 헤더 ── -->
+<div class="page-header">
+  <div class="page-title">
+    <span style="color:#ff4a00;">⚡</span>
+    Zap Error Dashboard
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+      <span id="updated" style="font-size:12px;color:#9ca3af;font-weight:400;"></span>
+      <button class="refresh-btn" onclick="load()">↻ 새로고침</button>
+    </div>
+  </div>
+  <div class="page-tabs">
+    <div class="page-tab active">Zap 오류</div>
+    <div class="page-tab" onclick="toggleWebhookLog()">웹훅 로그</div>
+  </div>
+</div>
+
+<!-- ── 웹훅 상태 바 ── -->
+<div id="webhookStatus" class="webhook-bar">
+  <span>📡 웹훅 수신</span>
+  <span id="lastWebhook">확인 중…</span>
+</div>
+
+<!-- ── 웹훅 로그 ── -->
+<div id="webhookLogPanel" class="webhook-log-panel" style="display:none;">
+  <div style="font-size:13px;font-weight:600;color:#6366f1;margin-bottom:8px;">📋 웹훅 수신 로그 (최근 30건)</div>
+  <div id="webhookLogBody" style="font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;"></div>
+</div>
+
+<!-- ── 통계 ── -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-val" id="sTotal">-</div>
+    <div class="stat-lbl">전체 오류</div>
+  </div>
+  <div class="stat-item s-red">
+    <div class="stat-val" id="sToday">-</div>
+    <div class="stat-lbl">오늘 오류</div>
+  </div>
+  <div class="stat-item s-amber">
+    <div class="stat-val" id="sNew">-</div>
+    <div class="stat-lbl">미처리 신규</div>
+  </div>
+  <div class="stat-item s-top" style="flex:1;">
+    <div class="stat-val s-purple" id="sTop" style="font-size:13px;padding-top:5px;color:#7c3aed;">-</div>
+    <div class="stat-lbl">최다 오류 잽</div>
+  </div>
+</div>
+
+<!-- ── 필터 바 (조회용, 서버 호출 없음) ── -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <input id="fSearch" placeholder="잽·오류·환급ID 검색…" oninput="filter()">
+  </div>
+  <div style="display:flex;gap:4px;" id="tabDate">
+    <button class="filter-chip active" data-val="" onclick="setTab(this,'date')">전체</button>
+    <button class="filter-chip" data-val="today"  onclick="setTab(this,'date')">오늘</button>
+    <button class="filter-chip" data-val="week"   onclick="setTab(this,'date')">이번 주</button>
+    <button class="filter-chip" data-val="month"  onclick="setTab(this,'date')">이번 달</button>
+  </div>
+  <div class="filter-date-range">
+    <input type="date" id="fDateFromInput" class="filter-date-input" onchange="onCustomDateChange()" title="기간 시작일">
+    <span class="filter-date-sep">~</span>
+    <input type="date" id="fDateToInput" class="filter-date-input" onchange="onCustomDateChange()" title="기간 종료일">
+    <button class="clear-date-btn" id="clearDateBtn" onclick="clearCustomDate()" title="기간 초기화">✕</button>
+  </div>
+  <span class="cnt-txt" id="cnt">0건</span>
+  <button class="refresh-btn" onclick="load()">↻</button>
+</div>
+
+<!-- ── Zapier 과거 데이터 수집 (API 호출 → 시트에 추가) ── -->
+<div class="zapier-fetch-bar">
+  <div class="zapier-fetch-label">
+    <span class="zapier-fetch-title">📥 과거 오류 수집</span>
+    <span class="zapier-fetch-hint">Zapier API 호출 · 시트에 새로 추가됨</span>
+  </div>
+  <input type="date" id="rangeFrom" />
+  <span class="zapier-fetch-sep">~</span>
+  <input type="date" id="rangeTo" />
+  <button class="zapier-fetch-btn" id="rangeFetchBtn" onclick="fetchRange()">수집</button>
+  <span class="zapier-fetch-info" id="rangeInfo"></span>
+  <button class="zapier-fetch-btn" style="background:#6b7280;margin-left:8px;" onclick="cleanupGhostRows()" title="Unknown Zap 유령 행 정리">🧹 유령행 정리</button>
+  <button class="zapier-fetch-btn" style="background:#dc2626;margin-left:4px;" onclick="resetAndRefetch()" title="시트 전체 삭제 후 기간 재수집">🗑 초기화+재수집</button>
+</div>
+
+<!-- ── 상태 탭 ── -->
+<div class="status-bar" id="tabStatus">
+  <div class="stab active" data-val="" onclick="setTab(this,'status')">전체 <span class="cnt" id="cntAll">-</span></div>
+  <div class="stab stab-group" data-val="__group_rerun__" onclick="setTab(this,'status')">↻ 재실행 <span class="cnt" id="cntRerun">-</span><span class="tab-n-badge" id="tabNRerun" style="display:none">N</span></div>
+  <div class="stab" data-val="보류" onclick="setTab(this,'status')">⏸ 보류 <span class="cnt" id="cntHold">-</span><span class="tab-n-badge" id="tabNHold" style="display:none">N</span></div>
+  <div class="stab stab-group" data-val="__group_del__" onclick="setTab(this,'status')" style="border-left:1px solid #e5e7eb;margin-left:8px;padding-left:12px;">✓ 삭제 <span class="cnt" id="cntDone">-</span><span class="tab-n-badge" id="tabNDel" style="display:none">N</span></div>
+  <div class="stab stab-group" data-val="__group_qa__" onclick="setTab(this,'status')" style="border-left:1px solid #e5e7eb;margin-left:8px;padding-left:12px;">🤖 QA <span class="cnt" id="cntQaGroup">-</span></div>
+</div>
+<!-- 재실행 서브탭 -->
+<div class="stab-sub-row" id="subRowRerun" style="display:none;">
+  <div class="stab-sub active-sub" data-sub="" onclick="setSubTab(this,'rerun')">전체 <span class="cnt" id="cntRerunAll">-</span></div>
+  <div class="stab-sub" data-sub="재실행 필요" onclick="setSubTab(this,'rerun')">재실행 필요 <span class="cnt" id="cntRerunNeed">-</span></div>
+  <div class="stab-sub" data-sub="재실행 완료" onclick="setSubTab(this,'rerun')">재실행 완료 <span class="cnt" id="cntRerunDone">-</span></div>
+  <div class="stab-sub s-qa-fail" data-sub="재실행 실패" onclick="setSubTab(this,'rerun')">❌ 재실행 실패 <span class="cnt" id="cntRerunFail">-</span></div>
+</div>
+<!-- 삭제 서브탭 -->
+<div class="stab-sub-row" id="subRowDel" style="display:none;">
+  <div class="stab-sub active-sub" data-sub="" onclick="setSubTab(this,'del')">전체 <span class="cnt" id="cntDelAll">-</span></div>
+  <div class="stab-sub" data-sub="삭제 필요" onclick="setSubTab(this,'del')">삭제 필요 <span class="cnt" id="cntDelNeed">-</span></div>
+  <div class="stab-sub" data-sub="__del_done__" onclick="setSubTab(this,'del')">삭제 완료 <span class="cnt" id="cntDelDone">-</span></div>
+</div>
+<!-- QA 서브탭 -->
+<div class="stab-sub-row" id="subRowQA" style="display:none;">
+  <div class="stab-sub active-sub" data-sub="" onclick="setSubTab(this,'qa')">전체 <span class="cnt" id="cntQaAll">-</span></div>
+  <div class="stab-sub" data-sub="__qa_pending__" onclick="setSubTab(this,'qa')">⏳ 진행중 <span class="cnt" id="cntQaPending">-</span></div>
+  <div class="stab-sub" data-sub="__qa_done__" onclick="setSubTab(this,'qa')">✅ 완료 <span class="cnt" id="cntQaDone">-</span></div>
+  <div class="stab-sub s-qa-fail" data-sub="__qa_fail__" onclick="setSubTab(this,'qa')">❌ 실패 <span class="cnt" id="cntQaFail">-</span></div>
+</div>
+
+<!-- ── 벌크 액션 바 ── -->
+<div id="bulkBar" class="bulk-bar" style="display:none;">
+  <input type="checkbox" id="cbAll" onclick="toggleSelectAll()" style="width:16px;height:16px;accent-color:#6366f1;">
+  <span class="bulk-count" id="bulkCount">0건 선택됨</span>
+  <button class="bulk-btn play" onclick="bulkReplay()">▶ 재실행</button>
+  <button class="bulk-btn" onclick="bulkHold()">⏸ 보류</button>
+  <button class="bulk-btn" onclick="bulkDelete()">🗑 삭제</button>
+  <button class="bulk-btn purge" id="btnPurge" onclick="bulkPurge()" style="display:none;">🗑 영구 삭제</button>
+</div>
+
+<!-- ── 새로고침 인디케이터 ── -->
+<div class="list-refresh-bar" id="refreshBar">
+  <div class="mini-spin"></div>
+  <span>데이터 업데이트 중…</span>
+</div>
+
+<!-- ── 리스트 ── -->
+<div class="list-wrap">
+  <div id="spinner" class="spinner-wrap">
+    <div class="spin"></div>
+    <div>불러오는 중…</div>
+  </div>
+  <div id="empty" class="empty-wrap" style="display:none;">
+    <div style="font-size:32px;margin-bottom:12px;">✅</div>
+    <div style="font-weight:600;color:#374151;margin-bottom:4px;">오류 없음</div>
+    <div style="font-size:12px;">선택한 조건의 Zap 오류가 없습니다</div>
+  </div>
+  <div id="errList"></div>
+</div>
+
+<!-- ── 모달 (보류/삭제) ── -->
+<div id="modal" class="modal-bg" style="display:none;" onclick="closeModalBg(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-desc"  id="modalDesc"></div>
+    <input class="modal-input" id="modalRefund" placeholder="환급 ID (선택 입력)">
+    <div class="modal-actions">
+      <button class="modal-btn cancel"  onclick="closeModal()">취소</button>
+      <button class="modal-btn confirm" id="modalOk">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 재실행 모달 ── -->
+<div id="replayModal" class="modal-bg" style="display:none;" onclick="closeReplayModalBg(event)">
+  <div class="modal-box">
+    <div class="modal-title">↻ 재실행 방식 선택</div>
+    <div class="modal-desc" style="margin-bottom:18px;">어떤 방식으로 재실행할까요?</div>
+    <button class="replay-option" onclick="confirmReplay('full')">
+      <span class="replay-icon">🔄</span>
+      <div><div class="replay-label">전체 잽 재실행</div><div class="replay-desc">트리거부터 처음부터 다시 실행</div></div>
+    </button>
+    <button class="replay-option" onclick="confirmReplay('from_error')">
+      <span class="replay-icon">⚡</span>
+      <div><div class="replay-label">에러 노드부터 재실행</div><div class="replay-desc">오류 발생 스텝부터 재시도</div></div>
+    </button>
+    <button class="replay-option" onclick="confirmReplay('label_only')" style="border-color:#e5e7eb;">
+      <span class="replay-icon">🏷</span>
+      <div><div class="replay-label">재실행 필요로 분류만</div><div class="replay-desc" style="color:#9ca3af;">실제 실행 없이 상태만 변경</div></div>
+    </button>
+    <button class="replay-option" onclick="confirmReplay('done_only')" style="border-color:#d1fae5;">
+      <span class="replay-icon">✅</span>
+      <div><div class="replay-label">재실행 완료로 분류만</div><div class="replay-desc" style="color:#9ca3af;">실제 실행 없이 완료 상태로 변경</div></div>
+    </button>
+    <button class="modal-btn cancel" style="width:100%;margin-top:4px;" onclick="closeReplayModal()">취소</button>
+  </div>
+</div>
+
+<script>
+let all = [], filtered = [], selected = new Set(), expanded = new Set();
+let deletedAll = [], deletedFiltered = [];
+let fStatus = '', fSubStatus = '', fAccount = '', fDate = '', fDateFrom = '', fDateTo = '';
+let pendingAction = null, pendingReplayRowId = null, pendingReplayRowIds = [];
+let isDeleteLogMode = false;
+const _seen = {
+  rerun: new Set(JSON.parse(localStorage.getItem('zentSeen_rerun') || '[]')),
+  hold:  new Set(JSON.parse(localStorage.getItem('zentSeen_hold')  || '[]')),
+  del:   new Set(JSON.parse(localStorage.getItem('zentSeen_del')   || '[]')),
+};
+function _saveSeen(k) { try { localStorage.setItem('zentSeen_' + k, JSON.stringify([..._seen[k]])); } catch(_) {} }
+function _hasUnseen(k, statuses) { return all.some(r => statuses.includes(r.status) && !_seen[k].has(String(r.id))); }
+function _markSeen(k, statuses) {
+  all.filter(r => statuses.includes(r.status)).forEach(r => _seen[k].add(String(r.id)));
+  _saveSeen(k);
+}
+function _pruneSeenIds() {
+  const cur = new Set(all.map(r => String(r.id)));
+  ['rerun','hold','del'].forEach(k => { [..._seen[k]].forEach(id => { if (!cur.has(id)) _seen[k].delete(id); }); _saveSeen(k); });
+}
+
+const STATUS_ICON = {
+  '신규':'🖐',
+  '재실행':'↻', '재실행 필요':'↻', '재실행 완료':'✅', '재실행 실패':'❌',
+  '보류':'⏸',
+  '삭제':'✓',   '삭제 필요':'✓',   '삭제 완료':'🗑',
+};
+const ACCT_LABEL  = { '개인':'개', '법인':'법', '케어':'케' };
+
+function detectAccount(n) {
+  if (n.includes('케어')) return '케어';
+  if (n.includes('법인') && !n.includes('개인')) return '법인';
+  if (n.includes('개인')) return '개인';
+  return '';
+}
+
+// ── 로드 ──
+let isFirstLoad = true;
+function load() {
+  if (isDeleteLogMode) { loadDeleteLog(); return; }
+  if (isFirstLoad) {
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('empty').style.display = 'none';
+    document.getElementById('errList').innerHTML = '';
+  } else {
+    // 기존 카드 유지, 상단 바만 스핀
+    document.getElementById('refreshBar').classList.add('show');
+  }
+  google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
+    document.getElementById('refreshBar').classList.remove('show');
+    onErr(err);
+  }).getErrorData();
+  google.script.run.withSuccessHandler(onStats).getStats();
+}
+
+function loadDeleteLog() {
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('errList').innerHTML = '';
+  google.script.run.withSuccessHandler(data => {
+    deletedAll = data;
+    filterDeleteLog();
+  }).withFailureHandler(onErr).getDeleteLog();
+}
+
+function filterDeleteLog() {
+  const q = document.getElementById('fSearch').value.toLowerCase();
+  const now = new Date();
+  let d = deletedAll;
+  if (fAccount) d = d.filter(r => detectAccount(r.zapName) === fAccount);
+  if (fDate === 'today') {
+    const s = new Date(now); s.setHours(0,0,0,0);
+    d = d.filter(r => r.deletedAt && new Date(r.deletedAt) >= s);
+  } else if (fDate === 'week') {
+    const s = new Date(now); s.setDate(s.getDate()-s.getDay()); s.setHours(0,0,0,0);
+    d = d.filter(r => r.deletedAt && new Date(r.deletedAt) >= s);
+  } else if (fDate === 'month') {
+    const s = new Date(now.getFullYear(), now.getMonth(), 1);
+    d = d.filter(r => r.deletedAt && new Date(r.deletedAt) >= s);
+  }
+  if (q) d = d.filter(r => (r.zapName+r.errorMessage+r.stepName+r.refundId+r.taskId).toLowerCase().includes(q));
+  deletedFiltered = d;
+  renderDeleteLog(d);
+}
+
+function renderDeleteLog(data) {
+  document.getElementById('spinner').style.display = 'none';
+  const list = document.getElementById('errList');
+  if (!data.length) { document.getElementById('empty').style.display = 'block'; list.innerHTML = ''; document.getElementById('cnt').textContent = '0건'; return; }
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('cnt').textContent = data.length + '건 (전체 ' + deletedAll.length + '건)';
+  list.innerHTML = data.map(r => {
+    const acct = detectAccount(r.zapName);
+    return `
+    <div class="del-card">
+      <div class="card-main">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span class="del-badge">🗑 삭제 완료</span>
+          <span style="font-size:11px;color:#9ca3af;">삭제시각 ${h(r.deletedAt)}</span>
+          ${r.status ? `<span style="font-size:11px;color:#9ca3af;">· 원상태: ${h(r.status)}</span>` : ''}
+        </div>
+        <div class="card-zap">${h(r.zapName)}</div>
+        <div style="margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+          ${r.stepName ? `<span class="card-step">${h(r.stepName)}</span>` : ''}
+          <span class="card-err" title="${h(r.errorMessage)}">${h(r.errorMessage.substring(0,100))}${r.errorMessage.length>100?'…':''}</span>
+          ${r.refundId ? `<span class="card-refund">환급 ${h(r.refundId)}</span>` : ''}
+        </div>
+        <div class="card-time">원본 오류시각: ${h(r.timestamp)}${r.taskId ? ' · Task ID: ' + h(r.taskId) : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onStats(s) {
+  document.getElementById('sTotal').textContent  = s.total;
+  document.getElementById('sToday').textContent  = s.today;
+  document.getElementById('sTop').textContent    = s.topZap;
+  const delDone = s.purgedCount || 0;
+  const el = document.getElementById('cntDelDone');
+  if (el) el.textContent = delDone;
+}
+
+function onData(data) {
+  all = data;
+  isFirstLoad = false;
+  _pruneSeenIds();
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('refreshBar').classList.remove('show');
+  document.getElementById('updated').textContent = '업데이트 ' + new Date().toLocaleTimeString('ko-KR');
+  updateCounts();
+  filter();
+}
+
+function updateCounts() {
+  const c = s => all.filter(r => r.status === s).length;
+  const _isQaReal    = r => r.qaResult && !['','QA 대기중','확인 대기중'].includes(r.qaResult);
+  // QA 카운트: 이미 처리된 카드(재실행 완료/삭제 필요) 제외 — filter()와 동일 기준
+  const _notActioned = r => r.status !== '재실행 완료';
+  const qaPending  = all.filter(r => _notActioned(r) && (['QA 대기중','확인 대기중'].includes(r.qaResult) || r.analysis === '분석 중...')).length;
+  const qaDone     = all.filter(r => _notActioned(r) && _isQaReal(r) && r.qaResult.includes('판단:')).length;
+  const qaFail     = all.filter(r => _notActioned(r) && _isQaReal(r) && !r.qaResult.includes('판단:')).length;
+  const rerunNeed  = c('재실행 필요') + c('재실행');
+  const rerunDone  = c('재실행 완료');
+  const rerunFail  = c('재실행 실패');
+  const rerunTotal = rerunNeed + rerunDone + rerunFail;
+  const delNeedAll = c('삭제 필요') + c('삭제');
+  const delNeed    = c('삭제 필요');
+  document.getElementById('sNew').textContent         = c('신규');
+  document.getElementById('cntAll').textContent       = all.length;
+  document.getElementById('cntRerun').textContent     = rerunTotal;
+  document.getElementById('cntRerunAll').textContent  = rerunTotal;
+  document.getElementById('cntRerunNeed').textContent = rerunNeed;
+  document.getElementById('cntRerunDone').textContent = rerunDone;
+  document.getElementById('cntRerunFail').textContent = rerunFail;
+  document.getElementById('cntHold').textContent      = c('보류');
+  document.getElementById('cntDone').textContent      = delNeedAll;
+  document.getElementById('cntDelAll').textContent    = delNeedAll;
+  document.getElementById('cntDelNeed').textContent   = delNeed;
+  document.getElementById('cntQaGroup').textContent   = qaPending + qaDone + qaFail;
+  document.getElementById('cntQaAll').textContent     = qaPending + qaDone + qaFail;
+  document.getElementById('cntQaPending').textContent = qaPending;
+  document.getElementById('cntQaDone').textContent    = qaDone;
+  document.getElementById('cntQaFail').textContent    = qaFail;
+  const _nb = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? 'flex' : 'none'; };
+  _nb('tabNRerun', _hasUnseen('rerun', ['재실행 필요','재실행']));
+  _nb('tabNHold',  _hasUnseen('hold',  ['보류']));
+  _nb('tabNDel',   _hasUnseen('del',   ['삭제 필요','삭제']));
+}
+
+// ── 탭 ──
+const _subRowMap = {
+  '__group_rerun__': 'subRowRerun',
+  '__group_del__':   'subRowDel',
+  '__group_qa__':    'subRowQA',
+};
+
+function setTab(el, group) {
+  const id = { status:'tabStatus', account:'tabAccount', date:'tabDate' }[group];
+  document.querySelectorAll('#' + id + ' [data-val]').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  if (group === 'status') {
+    fStatus = el.dataset.val;
+    fSubStatus = '';
+    isDeleteLogMode = false;
+    if (fStatus === '__group_rerun__') { _markSeen('rerun', ['재실행 필요','재실행']); document.getElementById('tabNRerun').style.display = 'none'; }
+    if (fStatus === '보류')            { _markSeen('hold',  ['보류']);                  document.getElementById('tabNHold').style.display  = 'none'; }
+    if (fStatus === '__group_del__')   { _markSeen('del',   ['삭제 필요','삭제']);       document.getElementById('tabNDel').style.display   = 'none'; }
+
+    // 서브탭 행 표시/숨김
+    Object.values(_subRowMap).forEach(sid => {
+      const row = document.getElementById(sid);
+      if (row) row.style.display = 'none';
+    });
+    if (_subRowMap[fStatus]) {
+      const row = document.getElementById(_subRowMap[fStatus]);
+      if (row) {
+        row.style.display = 'flex';
+        // 첫 번째 서브탭을 기본 활성화
+        row.querySelectorAll('.stab-sub').forEach(s => s.classList.remove('active-sub'));
+        const first = row.querySelector('.stab-sub');
+        if (first) first.classList.add('active-sub');
+        fSubStatus = first?.dataset.sub || '';
+      }
+    }
+    selected.clear();
+    updateBulkBar();
+  }
+  if (group === 'account') fAccount = el.dataset.val;
+  if (group === 'date') {
+    fDate = el.dataset.val; fDateFrom = ''; fDateTo = '';
+    document.getElementById('fDateFromInput').value = '';
+    document.getElementById('fDateToInput').value = '';
+    document.getElementById('fDateFromInput').classList.remove('has-val');
+    document.getElementById('fDateToInput').classList.remove('has-val');
+    document.getElementById('clearDateBtn').classList.remove('show');
+  }
+  filter();
+  updateBulkBar();
+}
+
+function setSubTab(el, groupKey) {
+  const rowId = { rerun:'subRowRerun', del:'subRowDel', qa:'subRowQA' }[groupKey];
+  document.querySelectorAll('#' + rowId + ' .stab-sub').forEach(s => s.classList.remove('active-sub'));
+  el.classList.add('active-sub');
+  fSubStatus = el.dataset.sub;
+
+  if (fSubStatus === '__del_done__') {
+    isDeleteLogMode = true;
+    selected.clear();
+    updateBulkBar();
+    loadDeleteLog();
+    return;
+  }
+  isDeleteLogMode = false;
+  filter();
+  updateBulkBar();
+}
+
+// ── 필터 ──
+function filter() {
+  if (isDeleteLogMode) { filterDeleteLog(); return; }
+  const q = document.getElementById('fSearch').value.toLowerCase();
+  const now = new Date();
+  let d = all;
+  const _isQaReal = r => r.qaResult && !['','QA 대기중','확인 대기중'].includes(r.qaResult);
+
+  if (fStatus === '__group_rerun__') {
+    if      (fSubStatus === '재실행 필요') d = d.filter(r => r.status === '재실행 필요' || r.status === '재실행');
+    else if (fSubStatus === '재실행 완료') d = d.filter(r => r.status === '재실행 완료');
+    else if (fSubStatus === '재실행 실패') d = d.filter(r => r.status === '재실행 실패');
+    else d = d.filter(r => ['재실행 필요','재실행','재실행 완료','재실행 실패'].includes(r.status));
+  } else if (fStatus === '__group_del__') {
+    if (fSubStatus === '삭제 필요') d = d.filter(r => r.status === '삭제 필요');
+    else d = d.filter(r => r.status === '삭제 필요' || r.status === '삭제');
+  } else if (fStatus === '__group_qa__') {
+    // 재실행 완료/삭제 필요 등 이미 처리된 카드는 QA 탭에서 제외
+    const _notActioned = r => r.status !== '재실행 완료';
+    if      (fSubStatus === '__qa_pending__') d = d.filter(r => _notActioned(r) && (['QA 대기중','확인 대기중'].includes(r.qaResult) || r.analysis === '분석 중...'));
+    else if (fSubStatus === '__qa_done__')    d = d.filter(r => _notActioned(r) && _isQaReal(r) && r.qaResult.includes('판단:'));
+    else if (fSubStatus === '__qa_fail__')    d = d.filter(r => _notActioned(r) && _isQaReal(r) && !r.qaResult.includes('판단:'));
+    else d = d.filter(r => _notActioned(r) && (_isQaReal(r) || ['QA 대기중','확인 대기중'].includes(r.qaResult) || r.analysis === '분석 중...'));
+  } else if (fStatus) {
+    d = d.filter(r => r.status === fStatus);
+  }
+  if (fAccount) d = d.filter(r => detectAccount(r.zapName) === fAccount);
+  if (fDateFrom && fDateTo) {
+    const s = new Date(fDateFrom + 'T00:00:00'); const e = new Date(fDateTo + 'T23:59:59');
+    d = d.filter(r => r.timestamp && new Date(r.timestamp) >= s && new Date(r.timestamp) <= e);
+  } else if (fDate === 'today') { const s = new Date(now); s.setHours(0,0,0,0); d = d.filter(r => r.timestamp && new Date(r.timestamp) >= s); }
+  else if (fDate === 'week')  { const s = new Date(now); s.setDate(s.getDate()-s.getDay()); s.setHours(0,0,0,0); d = d.filter(r => r.timestamp && new Date(r.timestamp) >= s); }
+  else if (fDate === 'month') { const s = new Date(now.getFullYear(), now.getMonth(), 1); d = d.filter(r => r.timestamp && new Date(r.timestamp) >= s); }
+  if (q) d = d.filter(r => (r.zapName+r.errorMessage+r.stepName+r.refundId).toLowerCase().includes(q));
+  filtered = d;
+  document.getElementById('cnt').textContent = d.length + '건';
+  render(d);
+  _schedulePendingCheck();
+  _startPendingTimers();
+}
+
+// ── 렌더 ──
+function render(data) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('refreshBar').classList.remove('show');
+  const list = document.getElementById('errList');
+  if (!data.length) { document.getElementById('empty').style.display = 'block'; list.innerHTML = ''; return; }
+  document.getElementById('empty').style.display = 'none';
+
+  list.innerHTML = data.map(r => {
+    const acct   = detectAccount(r.zapName);
+    const isDone = ['삭제 필요','삭제','재실행 완료'].includes(r.status);
+    const isSel  = selected.has(r.id);
+    const isPending = ['QA 대기중','확인 대기중'].includes(r.qaResult) || r.analysis === '분석 중...';
+    const hasQA  = !!(r.qaResult && !['','QA 대기중','확인 대기중'].includes(r.qaResult));
+    const hasAI  = !!(r.analysis && !['분석 중...','(API 키 미설정)'].includes(r.analysis) && !r.analysis.startsWith('분석 오류'));
+    const qOpen  = expanded.has(r.id+'_qa');
+    const aOpen  = expanded.has(r.id+'_ai');
+
+    return `
+    <div class="err-card st-${h(r.status.replace(/\s/g,''))} ${isDone?'is-done':''} ${isSel?'selected':''}" id="card-${r.id}">
+      <div class="card-cb"><input type="checkbox" ${isSel?'checked':''} onchange="toggleSelect(${r.id},this.checked)"></div>
+      <div class="card-status">
+        <span class="status-icon">${STATUS_ICON[r.status]||'🖐'}</span>
+        <span class="status-text">${h(r.status)}</span>
+      </div>
+      <div class="card-main">
+        <div class="card-zap">${h(r.zapName)}</div>
+        <div style="margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+          ${r.stepName ? `<span class="card-step">${h(r.stepName)}</span>` : ''}
+          <span class="card-err" title="${h(r.errorMessage)}">${h(r.errorMessage.substring(0,100))}${r.errorMessage.length>100?'…':''}</span>
+          ${r.refundId ? `<span class="card-refund">환급 ${h(r.refundId)}</span>` : ''}
+        </div>
+        <div class="card-time">${h(fmtDate(r.timestamp))}${isOld(r.timestamp) ? ' <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;margin-left:4px;">7일 초과</span>' : ''}</div>
+        ${isPending ? `
+        <div class="qa-running-wrap qa-auto-pending" data-qa-pending="${r.id}">
+          <div class="qa-running-badge">
+            <span class="qa-spinner"></span>
+            <span>처리 확인 진행중</span>
+            <span class="qa-running-pct qa-p-pct">0%</span>
+            <span style="font-size:10px;color:#818cf8;" class="qa-p-time">0초</span>
+          </div>
+          <div class="qa-bar-track"><div class="qa-bar-fill" style="width:0%"></div></div>
+        </div>` : ''}
+        ${hasQA ? `
+          <div class="expand-box qa ${qOpen?'open':''}" id="qa-${r.id}">${h(r.qaResult)}</div>
+          <button class="expand-toggle" onclick="toggleExpand(${r.id},'qa')">${qOpen?'▲ 접기':'▼ 처리 확인 펼치기'}</button>` : ''}
+        ${hasAI ? `
+          <div class="expand-box ai ${aOpen?'open':''}" id="ai-${r.id}">${h(r.analysis)}</div>
+          <button class="expand-toggle" onclick="toggleExpand(${r.id},'ai')">${aOpen?'▲ 접기':'▼ 원인 분석 펼치기'}</button>` : ''}
+      </div>
+      <div class="card-actions">
+        ${!isDone ? `
+          <button class="ca-btn replay" onclick="doReplay(${r.id})">↻ 재실행</button>
+          <button class="ca-btn qa-btn" onclick="runQA(${r.id},event)">확인</button>
+          <button class="ca-btn hold-btn" onclick="doAction(${r.id},'보류')">⏸</button>
+          <button class="ca-btn done-btn" onclick="doAction(${r.id},'삭제 필요')">✓</button>
+        ` : `
+          <button class="ca-btn qa-btn" onclick="runQA(${r.id},event)" style="font-size:11px;">확인</button>
+          <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">${h(r.actionTime)}</span>
+        `}
+        ${r.zapLink ? `<a href="${h(r.zapLink)}" target="_blank" class="arrow-btn">→</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── 선택 ──
+function toggleSelect(id, checked) {
+  if (checked) selected.add(id); else selected.delete(id);
+  document.getElementById('card-'+id)?.classList.toggle('selected', checked);
+  updateBulkBar();
+}
+function toggleSelectAll() {
+  const all_checked = document.getElementById('cbAll').checked;
+  filtered.forEach(r => { if (all_checked) selected.add(r.id); else selected.delete(r.id); });
+  render(filtered); updateBulkBar();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  bar.style.display = selected.size > 0 ? 'flex' : 'none';
+  document.getElementById('bulkCount').textContent = selected.size + '건 선택됨';
+  document.getElementById('btnPurge').style.display = (selected.size > 0 && fStatus === '__group_del__' && fSubStatus !== '__del_done__') ? 'flex' : 'none';
+}
+function bulkReplay() {
+  if (!selected.size) return;
+  pendingReplayRowIds = [...selected];
+  pendingReplayRowId = null;
+  document.querySelector('#replayModal .modal-title').textContent = `↻ 재실행 방식 선택`;
+  document.querySelector('#replayModal .modal-desc').textContent = `${pendingReplayRowIds.length}건을 재실행합니다. 방식을 선택하세요.`;
+  document.getElementById('replayModal').style.display = 'flex';
+}
+function bulkAction(status) {
+  if (!selected.size) return;
+  const ids = [...selected]; let done = 0;
+  ids.forEach(id => {
+    google.script.run
+      .withSuccessHandler(() => {
+        const row = all.find(r => r.id === id);
+        if (row) row.status = status;
+        if (++done === ids.length) {
+          selected.clear(); updateBulkBar(); updateCounts(); filter();
+          showToast(`${ids.length}건 ${status} 처리됐습니다`, 'ok');
+        }
+      })
+      .withFailureHandler(err => {
+        if (++done === ids.length) { selected.clear(); updateBulkBar(); updateCounts(); filter(); }
+        onErr(err);
+      })
+      .updateRowStatus(id, status, '');
+  });
+}
+function bulkDelete() { bulkAction('삭제 필요'); }
+function bulkHold()   { bulkAction('보류'); }
+function bulkPurge() {
+  if (!selected.size) return;
+  showConfirm(
+    '🗑 영구 삭제 확인',
+    `선택한 ${selected.size}건을 시트에서 영구 삭제할까요?\n이 작업은 되돌릴 수 없습니다.`,
+    () => {
+      const ids = [...selected];
+      google.script.run
+        .withSuccessHandler(res => {
+          ids.forEach(id => { const idx = all.findIndex(r => r.id === id); if (idx !== -1) all.splice(idx, 1); });
+          selected.clear(); updateBulkBar(); updateCounts(); filter();
+          showToast(`${ids.length}건 영구 삭제 완료`, 'ok');
+        })
+        .withFailureHandler(onErr)
+        .purgeRows(ids);
+    },
+    '영구 삭제', 'danger'
+  );
+}
+
+// ── 펼치기 ──
+function toggleExpand(id, type) {
+  const key = id+'_'+type;
+  const el = document.getElementById(type+'-'+id);
+  if (!el) return;
+  if (expanded.has(key)) {
+    expanded.delete(key); el.classList.remove('open');
+    el.nextElementSibling.textContent = type === 'qa' ? '▼ 처리 확인 펼치기' : '▼ 원인 분석 펼치기';
+  } else {
+    expanded.add(key); el.classList.add('open');
+    el.nextElementSibling.textContent = '▲ 접기';
+  }
+}
+
+// ── 재실행 모달 ──
+function doReplay(rowId) {
+  pendingReplayRowId = rowId;
+  pendingReplayRowIds = [];
+  document.querySelector('#replayModal .modal-title').textContent = '↻ 재실행 방식 선택';
+  document.querySelector('#replayModal .modal-desc').textContent = '어떤 방식으로 재실행할까요?';
+  document.getElementById('replayModal').style.display = 'flex';
+}
+function confirmReplay(type) {
+  const ids = pendingReplayRowIds.length ? pendingReplayRowIds : (pendingReplayRowId ? [pendingReplayRowId] : []);
+  if (!ids.length) return;
+  closeReplayModal();
+
+  // 분류만: 재실행 필요로 분류
+  if (type === 'label_only') {
+    const n = ids.length;
+    google.script.run
+      .withSuccessHandler(() => {
+        ids.forEach(id => { const row = all.find(r => r.id === id); if (row) row.status = '재실행 필요'; });
+        updateCounts(); filter();
+        showToast(`${n}건 재실행 필요로 분류됐습니다`, 'ok');
+      })
+      .withFailureHandler(onErr)
+      .bulkUpdateStatus(ids, '재실행 필요');
+    return;
+  }
+
+  // 분류만: 재실행 완료로 분류
+  if (type === 'done_only') {
+    const n = ids.length;
+    google.script.run
+      .withSuccessHandler(() => {
+        ids.forEach(id => { const row = all.find(r => r.id === id); if (row) row.status = '재실행 완료'; });
+        updateCounts(); filter();
+        showToast(`${n}건 재실행 완료로 분류됐습니다`, 'ok');
+      })
+      .withFailureHandler(onErr)
+      .bulkUpdateStatus(ids, '재실행 완료');
+    return;
+  }
+
+  if (ids.length === 1) {
+    showToast('재실행 요청 중…', 'info', 2000);
+    google.script.run
+      .withSuccessHandler(res => {
+        const row = all.find(r => r.id === ids[0]);
+        if (!res.success) {
+          showToast('재실행 실패 (HTTP ' + (res.httpCode || '') + ')', 'err', 6000);
+          if (row) row.status = '재실행 실패';
+        } else {
+          showToast('재실행이 요청됐습니다', 'ok');
+          if (row) row.status = res.status || '재실행 완료';
+        }
+        updateCounts(); filter();
+      })
+      .withFailureHandler(onErr)
+      .replayZapRun(ids[0], type);
+  } else {
+    showToast(`${ids.length}건 재실행 요청 중…`, 'info', 2000);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.failedCount > 0)
+          showToast(`재실행 요청: ${res.successCount}건 성공, ${res.failedCount}건 실패 (Task ID 없음 또는 세션 오류)`, 'warn', 6000);
+        else
+          showToast(`${res.successCount}건 재실행이 요청됐습니다`, 'ok');
+        load();
+      })
+      .withFailureHandler(onErr)
+      .bulkReplayZapRuns(ids, type);
+  }
+}
+function closeReplayModal() { document.getElementById('replayModal').style.display = 'none'; pendingReplayRowId = null; pendingReplayRowIds = []; }
+function closeReplayModalBg(e) { if (e.target === document.getElementById('replayModal')) closeReplayModal(); }
+
+// ── 액션 모달 ──
+function doAction(rowId, status) {
+  pendingAction = { rowId, status };
+  const T = { '삭제 필요':'✓ 삭제 필요 확인', '삭제':'✓ 삭제 확인', '보류':'⏸ 보류 확인' };
+  const D = { '삭제 필요':'처리 완료 후 삭제가 필요한 경우로 기록합니다.', '삭제':'처리 완료된 경우 삭제로 기록합니다.', '보류':'추가 확인이 필요한 경우 보류로 기록합니다.' };
+  document.getElementById('modalTitle').textContent = T[status];
+  document.getElementById('modalDesc').textContent  = D[status];
+  document.getElementById('modalRefund').value = '';
+  document.getElementById('modalOk').onclick = confirmAction;
+  document.getElementById('modal').style.display = 'flex';
+}
+function confirmAction() {
+  if (!pendingAction) return;
+  const { rowId, status } = pendingAction;
+  const refundId = document.getElementById('modalRefund').value.trim();
+  google.script.run
+    .withSuccessHandler(() => {
+      closeModal();
+      const row = all.find(r => r.id === rowId);
+      if (row) { row.status = status; if (refundId) row.refundId = refundId; }
+      updateCounts(); filter();
+      showToast(`${status}으로 처리됐습니다`, 'ok');
+    })
+    .withFailureHandler(onErr)
+    .updateRowStatus(rowId, status, refundId);
+}
+
+// ── QA ──
+function runQA(rowId, evt) {
+  _showQAInputModal(rowId, evt.target);
+}
+
+function _showQAInputModal(rowId, btn) {
+  const row = all.find(r => r.id === rowId);
+  const existingPhone    = row?.customerPhone || '';
+  const existingDeal     = row?.dealId || '';
+  const existingTemplate = row?.templateId || '';
+  const bg = document.createElement('div');
+  bg.className = 'confirm-bg';
+  bg.innerHTML = `
+    <div class="confirm-box" style="width:420px;">
+      <div class="confirm-title">📋 처리 확인 데이터</div>
+      <div class="confirm-msg" style="margin-bottom:14px;">데이터를 확인·수정하고 처리 확인을 실행하세요.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <div>
+          <label style="font-size:11px;color:#6b7280;font-weight:600;">전화번호 (010xxxxxxxx)</label>
+          <input id="_qaPhone" type="text" placeholder="010-XXXX-XXXX" value="${existingPhone}" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-top:4px;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#6b7280;font-weight:600;">딜 ID (Pipedrive)</label>
+          <input id="_qaDeal" type="text" placeholder="12345" value="${existingDeal}" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-top:4px;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#6b7280;font-weight:600;">템플릿 ID (Solapi 알림톡)</label>
+          <input id="_qaTemplate" type="text" placeholder="KA01TP..." value="${existingTemplate}" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-top:4px;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button class="confirm-btn cancel" id="_qaCancel">취소</button>
+        <button class="confirm-btn confirm" id="_qaOk">확인 실행</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const phoneInput = document.getElementById('_qaPhone');
+  phoneInput.focus(); phoneInput.select();
+  document.getElementById('_qaCancel').onclick = () => bg.remove();
+  document.getElementById('_qaOk').onclick = () => {
+    const phone      = document.getElementById('_qaPhone').value.trim().replace(/[^0-9]/g, '');
+    const dealId     = document.getElementById('_qaDeal').value.trim().replace(/[^0-9]/g, '');
+    const templateId = document.getElementById('_qaTemplate').value.trim();
+    bg.remove();
+    _doRunQA(rowId, phone, dealId, btn, templateId);
+  };
+  bg.onclick = e => { if (e.target === bg) bg.remove(); };
+}
+
+function _doRunQA(rowId, manualPhone, manualDealId, btn, manualTemplateId) {
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  // 진행 표시 주입
+  const ESTIMATED_S = 22;
+  const startTime = Date.now();
+  const cardMain = document.querySelector('#card-' + rowId + ' .card-main');
+  let wrapEl = null, fillEl = null, ptextEl = null, ptimeEl = null;
+
+  if (cardMain) {
+    cardMain.querySelectorAll('.qa-pending-badge, .qa-auto-pending').forEach(el => el.style.display = 'none');
+    // 기존 QA 결과도 진행 중엔 숨김
+    cardMain.querySelectorAll('.expand-box.qa, .expand-toggle').forEach(el => el.style.display = 'none');
+
+    wrapEl = document.createElement('div');
+    wrapEl.className = 'qa-running-wrap';
+    wrapEl.innerHTML =
+      `<div class="qa-running-badge">` +
+        `<span class="qa-spinner"></span>` +
+        `<span id="qa-pt-${rowId}">처리 확인 진행중</span>` +
+        `<span class="qa-running-pct" id="qa-pp-${rowId}">0%</span>` +
+        `<span style="font-size:10px;color:#818cf8;" id="qa-ps-${rowId}">0초</span>` +
+      `</div>` +
+      `<div class="qa-bar-track"><div class="qa-bar-fill" id="qa-bf-${rowId}" style="width:0%"></div></div>`;
+
+    const anchor = cardMain.querySelector('.expand-box, .expand-toggle');
+    cardMain.insertBefore(wrapEl, anchor || null);
+    fillEl  = document.getElementById('qa-bf-' + rowId);
+    ptextEl = document.getElementById('qa-pt-' + rowId);
+    ptimeEl = document.getElementById('qa-ps-' + rowId);
+  }
+
+  const timer = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const pct = Math.min(95, Math.round(elapsed / ESTIMATED_S * 100));
+    if (fillEl)  fillEl.style.width = pct + '%';
+    if (document.getElementById('qa-pp-' + rowId))
+      document.getElementById('qa-pp-' + rowId).textContent = pct + '%';
+    if (ptimeEl) ptimeEl.textContent = Math.round(elapsed) + '초';
+  }, 1000);
+
+  const _cleanup = () => {
+    clearInterval(timer);
+    if (wrapEl) wrapEl.remove();
+    if (btn) { btn.textContent = '확인'; btn.disabled = false; }
+  };
+
+  google.script.run
+    .withSuccessHandler(res => {
+      _cleanup();
+      if (!res || !res.qa) return;
+      const qa = res.qa;
+      const row = all.find(r => r.id === rowId);
+      if (row) {
+        if (qa.summary) row.qaResult = qa.summary;
+        if (manualPhone)      row.customerPhone = manualPhone;
+        if (manualDealId)     row.dealId = manualDealId;
+        if (manualTemplateId) row.templateId = manualTemplateId;
+        if (qa.action && ['재실행 필요', '삭제 필요', '보류'].includes(qa.action)) {
+          row.status = qa.action;
+        }
+      }
+      _updateCardQA(rowId, qa);
+      updateCounts();
+      filter();
+    })
+    .withFailureHandler(err => {
+      _cleanup();
+      onErr(err);
+    })
+    .runQAForRow(rowId, manualPhone, manualDealId, manualTemplateId);
+}
+
+function _updateCardQA(rowId, qa) {
+  if (!qa) return;
+  const summary = qa.summary || '';
+  const action  = qa.action  || '';
+  // all 배열 업데이트
+  const row = all.find(r => r.id === rowId);
+  if (row) { row.qaResult = summary; row._qaAction = action; }
+  // DOM 직접 업데이트
+  let qaBox = document.getElementById('qa-' + rowId);
+  const cardMain = document.querySelector('#card-' + rowId + ' .card-main');
+  if (!cardMain) return;
+  if (summary) {
+    if (!qaBox) {
+      qaBox = document.createElement('div');
+      qaBox.className = 'expand-box qa';
+      qaBox.id = 'qa-' + rowId;
+      const toggle = document.createElement('button');
+      toggle.className = 'expand-toggle';
+      toggle.textContent = '▼ 처리 확인 펼치기';
+      toggle.onclick = () => toggleExpand(rowId, 'qa');
+      const aiBox = document.getElementById('ai-' + rowId);
+      cardMain.insertBefore(toggle, aiBox || null);
+      cardMain.insertBefore(qaBox, toggle);
+    }
+    // 본문 + 추천 액션 바
+    const actionBarHtml = action ? (() => {
+      const isDel   = action === '삭제 필요' || action === '삭제';
+      const isRerun = action === '재실행 필요' || action === '재실행';
+      const badgeClass = isDel ? 'del' : isRerun ? 'rerun' : 'hold';
+      const emoji      = isDel ? '✓' : isRerun ? '↻' : '⏸';
+      const btnClass   = isDel ? 'del-btn' : isRerun ? 'rerun-btn' : '';
+      const actStatus  = isDel ? '삭제 필요' : isRerun ? '재실행 필요' : action;
+      return `<div class="qa-action-bar">
+        <span class="qa-recommend-badge ${badgeClass}">💡 ${action} 추천</span>
+        ${btnClass ? `<button class="qa-act-btn ${btnClass}" onclick="doAction(${rowId},'${actStatus}')">${emoji} ${action}으로 처리</button>` : ''}
+      </div>`;
+    })() : '';
+    qaBox.innerHTML = summary.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + actionBarHtml;
+    // 자동으로 펼치기
+    if (!qaBox.classList.contains('open')) {
+      expanded.add(rowId + '_qa');
+      qaBox.classList.add('open');
+      const toggle = qaBox.nextElementSibling;
+      if (toggle) toggle.textContent = '▲ 접기';
+    }
+    showToast(`처리 확인 완료 — ${action ? action + ' 추천' : '확인 필요'}`, 'info', 4000);
+  }
+}
+
+function closeModal()    { document.getElementById('modal').style.display = 'none'; pendingAction = null; }
+function closeModalBg(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+// ── 웹훅 로그 ──
+function toggleWebhookLog() {
+  const p = document.getElementById('webhookLogPanel');
+  const show = p.style.display === 'none';
+  p.style.display = show ? 'block' : 'none';
+  if (show) google.script.run.withSuccessHandler(logs => {
+    const el = document.getElementById('webhookLogBody');
+    if (!logs.length) { el.textContent = '수신 기록 없음'; return; }
+    el.innerHTML = logs.map(l => {
+      const c = l.type==='ERROR'?'#dc2626':l.type==='POST'?'#16a34a':'#6b7280';
+      return `<div style="border-bottom:1px solid #f3f4f6;padding:4px 0;"><span style="color:${c};font-weight:600;">[${l.type}]</span> <span style="color:#9ca3af;">${h(l.time)}</span> ${h(l.content)}</div>`;
+    }).join('');
+  }).getWebhookLog();
+}
+
+function loadStatus() {
+  google.script.run.withSuccessHandler(s => {
+    const el = document.getElementById('lastWebhook');
+    const bar = document.getElementById('webhookStatus');
+    if (!s || s.lastReceived === '없음') {
+      el.textContent = '⚠️ 수신 없음 — 모니터링 잽 확인 필요';
+      bar.className = 'webhook-bar warn';
+    } else {
+      el.textContent = '✅ ' + s.lastReceived;
+      bar.className = 'webhook-bar';
+    }
+  }).getSystemStatus();
+}
+
+function h(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _qaAction(qaResult) {
+  if (!qaResult) return '';
+  if (qaResult.includes('(삭제 필요)') || qaResult.includes('(삭제)')) return '삭제 필요';
+  if (qaResult.includes('(재실행 필요)') || qaResult.includes('(재실행)')) return '재실행 필요';
+  if (qaResult.includes('(보류)')) return '보류';
+  return '';
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function isOld(ts) {
+  if (!ts) return false;
+  const d = new Date(ts);
+  if (isNaN(d)) return false;
+  return (Date.now() - d.getTime()) > 7 * 24 * 60 * 60 * 1000;
+}
+
+// ── 토스트 ──
+function showToast(msg, type = 'info', duration = 4000) {
+  const wrap = document.getElementById('toastWrap');
+  const icons = { ok: '✅', err: '❌', info: 'ℹ️', warn: '⚠️' };
+  const t = document.createElement('div');
+  t.className = `toast t-${type}`;
+  t.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-body">${h(msg)}</span><span class="toast-close" onclick="this.parentElement.remove()">✕</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; setTimeout(() => t.remove(), 300); }, duration);
+}
+
+// ── 확인 다이얼로그 ──
+function showConfirm(title, msg, onOk, okLabel = '확인', okClass = 'confirm') {
+  const bg = document.createElement('div');
+  bg.className = 'confirm-bg';
+  bg.innerHTML = `
+    <div class="confirm-box">
+      <div class="confirm-title">${h(title)}</div>
+      <div class="confirm-msg">${h(msg)}</div>
+      <div class="confirm-actions">
+        <button class="confirm-btn cancel" id="_cfCancel">취소</button>
+        <button class="confirm-btn ${okClass}" id="_cfOk">${h(okLabel)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const remove = () => bg.remove();
+  bg.querySelector('#_cfCancel').onclick = remove;
+  bg.querySelector('#_cfOk').onclick = () => { remove(); onOk(); };
+  bg.onclick = e => { if (e.target === bg) remove(); };
+}
+
+function onErr(e) { showToast('오류: ' + (e.message || e), 'err', 6000); }
+
+// ── 조회 기간 직접 입력 ──
+function onCustomDateChange() {
+  const from = document.getElementById('fDateFromInput').value;
+  const to   = document.getElementById('fDateToInput').value;
+  fDateFrom = from; fDateTo = to;
+  const hasRange = !!(from || to);
+  document.getElementById('fDateFromInput').classList.toggle('has-val', !!from);
+  document.getElementById('fDateToInput').classList.toggle('has-val', !!to);
+  document.getElementById('clearDateBtn').classList.toggle('show', hasRange);
+  if (hasRange) {
+    document.querySelectorAll('#tabDate [data-val]').forEach(t => t.classList.remove('active'));
+    fDate = '';
+  }
+  filter();
+}
+function clearCustomDate() {
+  fDateFrom = ''; fDateTo = '';
+  document.getElementById('fDateFromInput').value = '';
+  document.getElementById('fDateToInput').value = '';
+  document.getElementById('fDateFromInput').classList.remove('has-val');
+  document.getElementById('fDateToInput').classList.remove('has-val');
+  document.getElementById('clearDateBtn').classList.remove('show');
+  const allChip = document.querySelector('#tabDate [data-val=""]');
+  if (allChip) allChip.classList.add('active');
+  fDate = '';
+  filter();
+}
+
+// ── 기간 수집 (Zapier API → 시트 추가) ──
+function initRangePicker() {
+  const today = new Date();
+  const toStr  = today.toISOString().slice(0, 10);
+  const from   = new Date(today); from.setDate(from.getDate() - 7);
+  const fromStr = from.toISOString().slice(0, 10);
+  document.getElementById('rangeFrom').value = fromStr;
+  document.getElementById('rangeTo').value   = toStr;
+}
+
+function fetchRange() {
+  const from = document.getElementById('rangeFrom').value;
+  const to   = document.getElementById('rangeTo').value;
+  if (!from || !to) { showToast('시작일과 종료일을 선택해주세요', 'warn'); return; }
+  if (from > to)    { showToast('시작일이 종료일보다 늦을 수 없습니다', 'warn'); return; }
+
+  const btn  = document.getElementById('rangeFetchBtn');
+  const info = document.getElementById('rangeInfo');
+  btn.disabled = true;
+  btn.textContent = '수집 중…';
+  info.textContent = `${from} ~ ${to} 기간 에러 수집 중…`;
+
+  // 종료일은 해당 일 23:59:59 까지 포함
+  const periodStart = new Date(from + 'T00:00:00').toISOString();
+  const periodEnd   = new Date(to   + 'T23:59:59').toISOString();
+
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      btn.textContent = '수집';
+      if (!res.success) {
+        info.textContent = '수집 실패: ' + res.error;
+        showToast('수집 실패: ' + res.error, 'err', 6000);
+        return;
+      }
+      info.textContent = `완료 — 신규 ${res.added}건 추가 / 중복 ${res.skipped}건 건너뜀`;
+      showToast(`${from} ~ ${to}: 신규 ${res.added}건 추가`, res.added > 0 ? 'ok' : 'info');
+      load();
+      _triggerExtensionEnrich();
+    })
+    .withFailureHandler(err => {
+      btn.disabled = false;
+      btn.textContent = '수집';
+      info.textContent = '수집 오류';
+      onErr(err);
+    })
+    .pollRange(periodStart, periodEnd);
+}
+
+// 수집 완료 후 크롬 익스텐션에 즉시 enrich 요청 (content script postMessage 중계)
+function _triggerExtensionEnrich() {
+  window.postMessage({ type: 'ZENT_ENRICH_NOW' }, '*');
+}
+
+function cleanupGhostRows() {
+  showConfirm('유령행 정리', 'Unknown Zap 유령 행(실제 행과 동일 taskId)을 삭제할까요?', () => {
+    showToast('유령행 정리 중…', 'info', 3000);
+    google.script.run
+      .withSuccessHandler(res => {
+        showToast(res.removed > 0 ? `유령행 ${res.removed}건 삭제됐습니다` : '삭제할 유령행이 없습니다', res.removed > 0 ? 'ok' : 'info');
+        if (res.removed > 0) load();
+      })
+      .withFailureHandler(onErr)
+      .purgeGhostRows();
+  }, '삭제', 'danger');
+}
+
+function resetAndRefetch() {
+  const from = document.getElementById('rangeFrom').value;
+  const to   = document.getElementById('rangeTo').value;
+  if (!from || !to) { showToast('먼저 수집 기간을 선택해주세요', 'warn'); return; }
+  showConfirm('초기화 + 재수집', `시트 전체를 삭제하고 ${from} ~ ${to} 기간을 새로 수집할까요?\n이 작업은 되돌릴 수 없습니다.`, () => _doResetAndRefetch(from, to), '초기화', 'danger');
+}
+
+function _doResetAndRefetch(from, to) {
+
+  const info = document.getElementById('rangeInfo');
+  info.textContent = '초기화 중…';
+  showToast('시트 초기화 중…', 'info', 3000);
+
+  google.script.run
+    .withSuccessHandler(() => {
+      info.textContent = '재수집 중…';
+      showToast('재수집 중…', 'info', 5000);
+      all = [];
+      filter();
+      const periodStart = new Date(from + 'T00:00:00').toISOString();
+      const periodEnd   = new Date(to   + 'T23:59:59').toISOString();
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.success) { info.textContent = '수집 실패: ' + res.error; showToast('수집 실패: ' + res.error, 'err', 6000); return; }
+          info.textContent = `완료 — 신규 ${res.added}건`;
+          showToast(`초기화 후 ${res.added}건 수집됐습니다`, 'ok');
+          load();
+          _triggerExtensionEnrich();
+        })
+        .withFailureHandler(onErr)
+        .pollRange(periodStart, periodEnd);
+    })
+    .withFailureHandler(onErr)
+    .clearAllErrors();
+}
+
+let _pendingTimer = null;
+let _pendingRetries = 0;
+let _pendingIdSnapshot = '';
+function _schedulePendingCheck() {
+  if (_pendingTimer) clearTimeout(_pendingTimer);
+  const pendingItems = all.filter(r => ['QA 대기중','확인 대기중'].includes(r.qaResult) || r.analysis === '분석 중...');
+  if (!pendingItems.length) return;
+  // pending 목록이 바뀌었으면 (뭔가 해결됨) 카운터 리셋
+  const snap = pendingItems.map(r => r.id).sort().join(',');
+  if (snap !== _pendingIdSnapshot) { _pendingRetries = 0; _pendingIdSnapshot = snap; }
+  if (_pendingRetries < 5) {
+    _pendingRetries++;
+    _pendingTimer = setTimeout(() => { load(); }, 30000);
+  }
+}
+
+// 대기중 카드 진행 타이머
+const _pendingStarts = {};
+let _pendingInterval = null;
+
+function _startPendingTimers() {
+  const badges = document.querySelectorAll('[data-qa-pending]');
+  if (!badges.length) {
+    if (_pendingInterval) { clearInterval(_pendingInterval); _pendingInterval = null; }
+    return;
+  }
+  badges.forEach(b => {
+    const id = b.dataset.qaPending;
+    if (!_pendingStarts[id]) _pendingStarts[id] = Date.now();
+  });
+  if (!_pendingInterval) {
+    _pendingInterval = setInterval(() => {
+      const badges = document.querySelectorAll('[data-qa-pending]');
+      if (!badges.length) { clearInterval(_pendingInterval); _pendingInterval = null; return; }
+      badges.forEach(b => {
+        const id = b.dataset.qaPending;
+        const elapsed = Math.round((Date.now() - (_pendingStarts[id] || Date.now())) / 1000);
+        const pct = Math.min(90, Math.round(elapsed / 25 * 100));
+        const t = b.querySelector('.qa-p-time');  if (t) t.textContent = elapsed + '초';
+        const p = b.querySelector('.qa-p-pct');   if (p) p.textContent = pct + '%';
+        const f = b.querySelector('.qa-bar-fill'); if (f) f.style.width = pct + '%';
+      });
+    }, 1000);
+  }
+}
+
+load();
+loadStatus();
+initRangePicker();
+setInterval(load, 120000);
+setInterval(loadStatus, 60000);
+</script>
+</body>
+</html>

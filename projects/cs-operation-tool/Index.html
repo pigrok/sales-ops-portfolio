@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CS Operation Tool</title>
+  <style>
+    :root {
+      --bg: #f3f6fc;
+      --card: #ffffff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #2b6cff;
+      --primary-hover: #1d56d6;
+      --dark: #111827;
+      --dark-hover: #0b1220;
+      --ok-bg: #ecfdf3;
+      --ok-text: #065f46;
+      --err-bg: #fef2f2;
+      --err-text: #991b1b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      margin: 0;
+      background: linear-gradient(180deg, #f8faff 0%, var(--bg) 100%);
+      color: var(--text);
+      padding: 22px;
+    }
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .top-actions button { width: auto; padding: 8px 12px; }
+    h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: -0.01em; }
+    .sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+
+    .app-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .app-col { min-width: 0; }
+    .col-title {
+      margin: 0 0 10px 2px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .call-col .grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .call-col .layout {
+      display: grid;
+      grid-template-columns: minmax(200px, 0.32fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .call-col .pane-basic .field:last-child { margin-bottom: 0; }
+    .call-col .pod-fields-hidden { display: none !important; }
+    .call-col .pane {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fcfdff;
+      padding: 12px;
+      min-width: 0;
+    }
+    .call-col .pane-title {
+      margin: 2px 2px 10px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 700;
+    }
+    .call-col .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fafbff;
+    }
+    .call-col label { color: var(--muted); font-size: 13px; font-weight: 600; }
+    .call-col input,
+    .call-col select,
+    .call-col textarea,
+    .call-col button {
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      background: #fff;
+    }
+    .call-col input:focus,
+    .call-col select:focus,
+    .call-col textarea:focus {
+      outline: none;
+      border-color: #9cb8ff;
+      box-shadow: 0 0 0 3px rgba(43, 108, 255, 0.12);
+    }
+    .call-col textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+    .call-col #callDatetimeKst,
+    .call-col #assigneeUserId { height: 44px; }
+    .call-col .btns { display: flex; gap: 10px; margin-top: 10px; }
+    .call-col .pane-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .call-col .pane-actions button {
+      width: auto;
+      padding: 8px 12px;
+      border: 0;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+    .call-col .pane-actions button.ghost {
+      background: #eef2ff;
+      color: #1f3a8a;
+      border: 1px solid #c7d2fe;
+      font-weight: 600;
+    }
+    .call-col .btns button { width: auto; flex: 1; }
+    .call-col button {
+      border: 0;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s ease, transform .05s ease;
+    }
+    .call-col button:hover { background: var(--primary-hover); }
+    .call-col button:active { transform: translateY(1px); }
+    .call-col button.dark { background: var(--dark); }
+    .call-col button.dark:hover { background: var(--dark-hover); }
+    .call-col button.copy { background: #334155; }
+    .call-col button.copy:hover { background: #1f2937; }
+    .call-col button.copy.ok,
+    .call-col button.copy.ok:hover { background: #1a9e5f; }
+    .call-col button:disabled { opacity: .65; cursor: not-allowed; }
+    .call-col .upload-zone {
+      border: 1.5px dashed #cfd8ea;
+      border-radius: 12px;
+      background: #f8faff;
+      min-height: 126px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+      padding: 14px;
+    }
+    .call-col .upload-zone:hover { border-color: #9cb8ff; background: #f2f6ff; }
+    .call-col .upload-zone.dragover {
+      border-color: #2b6cff;
+      background: #eef4ff;
+      box-shadow: 0 0 0 3px rgba(43, 108, 255, 0.12);
+    }
+    .call-col .upload-icon { font-size: 26px; line-height: 1; color: #a7b5d8; margin-bottom: 8px; }
+    .call-col .upload-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    .call-col .upload-sub { font-size: 12px; color: #6b7280; }
+    .call-col .file-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #334155;
+      background: #eef2ff;
+      border: 1px solid #dbe4ff;
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: none;
+      word-break: break-all;
+    }
+    .call-col #dialogue { min-height: 320px; }
+    .call-col .drive-rec-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .call-col .drive-rec-header label { margin: 0; }
+    .call-col .drive-rec-refresh {
+      width: auto;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #eef2ff;
+      color: #1f3a8a;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .call-col .drive-rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow: auto;
+    }
+    .call-col .drive-rec-item {
+      text-align: left;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .call-col .drive-rec-item:hover {
+      border-color: #9cb8ff;
+      background: #f8faff;
+    }
+    .call-col .drive-rec-item.active {
+      border-color: #2b6cff;
+      background: #eef4ff;
+    }
+    .call-col .drive-rec-item:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .call-col .drive-rec-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      word-break: break-all;
+    }
+    .call-col .drive-rec-meta {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .call-col .drive-rec-empty {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+      padding: 8px 2px;
+    }
+    .call-col .drive-rec-account {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .call-col .drive-rec-account.warn {
+      color: #b45309;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .call-col .drive-rec-item-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .call-col .drive-rec-item-row .drive-rec-item {
+      flex: 1;
+    }
+    .call-col .drive-rec-dl {
+      flex-shrink: 0;
+      padding: 6px 8px;
+      font-size: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      color: #334155;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+    .call-col .drive-rec-dl:hover { background: #f1f5f9; border-color: #9cb8ff; }
+    .section-toggle-label {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-toggle-label::after {
+      content: "▾";
+      font-size: 12px;
+      color: #6b7280;
+      transition: transform .2s;
+    }
+    .section-toggle-label.collapsed::after { transform: rotate(-90deg); }
+    .section-collapsible { overflow: hidden; transition: max-height .25s ease; max-height: 1000px; }
+    .section-collapsible.hidden { max-height: 0; }
+
+    .top-actions button,
+    .call-col .top-actions button {
+      width: auto;
+      padding: 8px 12px;
+      background: var(--primary);
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .top-actions button.ghost {
+      background: #eef2ff;
+      color: #1f3a8a;
+      border: 1px solid #c7d2fe;
+      font-weight: 600;
+    }
+    .top-actions button.copy { background: #334155; color: #fff; }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: none;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+    .ok { display: block; background: var(--ok-bg); color: var(--ok-text); border: 1px solid #c8f1da; }
+    .err { display: block; background: var(--err-bg); color: var(--err-text); border: 1px solid #fecaca; }
+
+    /* SMS template pane */
+    .sms-col .sms-card {
+      background: #fcfdff;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .sms-col .sms-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+    .sms-col .sms-row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .sms-col input[type="text"],
+    .sms-col textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .sms-col input[type="text"]:focus,
+    .sms-col textarea:focus {
+      border-color: #9cb8ff;
+      box-shadow: 0 0 0 3px rgba(43, 108, 255, 0.12);
+    }
+    .sms-col textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+    .sms-col .sms-divider { border: none; border-top: 1px solid #f0f0ec; margin: 10px 0; }
+
+    .sms-col .sms-tab-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .sms-col .sms-tab {
+      flex: 1 1 calc(50% - 3px);
+      min-width: 72px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 8px;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.35;
+      width: auto;
+    }
+    .sms-col .sms-tab span {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      color: #bbb;
+      margin-top: 2px;
+    }
+    .sms-col .sms-tab.active { border-color: #3a7bff; background: #eef3ff; color: #1a4fd6; }
+    .sms-col .sms-tab.active span { color: #7da3f5; }
+    .sms-col .sms-btn-add-tab {
+      flex: 1 1 calc(50% - 3px);
+      min-width: 72px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1.5px dashed #c5c5c0;
+      background: #fafaf8;
+      color: #aaa;
+      cursor: pointer;
+      width: auto;
+    }
+
+    .sms-col .sms-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .sms-col .sms-btn-edit {
+      font-size: 12px;
+      font-weight: 500;
+      color: #3a7bff;
+      background: none;
+      border: 1px solid #c5d8ff;
+      border-radius: 6px;
+      padding: 3px 10px;
+      cursor: pointer;
+      width: auto;
+    }
+    .sms-col .sms-edit-area { display: none; margin-top: 8px; }
+    .sms-col .sms-edit-area.open { display: block; }
+    .sms-col .sms-hint { font-size: 11px; color: #aaa; margin-bottom: 6px; line-height: 1.5; }
+    .sms-col .sms-tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .sms-col .sms-tag {
+      font-size: 11px;
+      font-weight: 500;
+      background: #eef3ff;
+      color: #1a4fd6;
+      border: 1px solid #c5d8ff;
+      border-radius: 4px;
+      padding: 3px 8px;
+      cursor: pointer;
+      width: auto;
+    }
+    .sms-col .sms-name-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .sms-col .sms-name-input-row input { flex: 1; }
+    .sms-col .sms-btn-save {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #1a4fd6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .sms-col .sms-btn-row-flex { display: flex; gap: 6px; margin-top: 6px; }
+    .sms-col .sms-btn-reset,
+    .sms-col .sms-btn-delete {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      background: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: auto;
+    }
+    .sms-col .sms-btn-reset { color: #aaa; border: 1px solid var(--line); }
+    .sms-col .sms-btn-delete { color: #ff4d4d; border: 1px solid #ffd0d0; }
+
+    .sms-col .sms-img-upload-area {
+      border: 1.5px dashed #cfd8ea;
+      border-radius: 10px;
+      padding: 0.8rem;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      background: #f8faff;
+    }
+    .sms-col .sms-img-upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+    }
+    .sms-col .sms-img-upload-area .upload-text { font-size: 12px; color: #888; }
+    .sms-col .sms-img-preview-wrap { position: relative; display: none; margin-top: 8px; }
+    .sms-col .sms-img-preview {
+      max-width: 100%;
+      max-height: 120px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      display: block;
+    }
+    .sms-col .sms-btn-remove-img {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      background: #ff4d4d;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      padding: 0;
+    }
+    .sms-col .sms-img-status { font-size: 11px; color: #bbb; font-weight: 500; margin-top: 4px; }
+    .sms-col .sms-img-status.active { color: #1a9e5f; }
+
+    .sms-col .sms-preview-box {
+      background: #f7f7f5;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 90px;
+      color: var(--text);
+    }
+    .sms-col .sms-preview-box .hl { color: #1a4fd6; font-weight: 600; }
+    .sms-col .sms-preview-box .ph { color: #bbb; }
+    .sms-col .sms-btn-copy {
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #1a4fd6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .sms-col .sms-btn-copy.ok { background: #1a9e5f; }
+    .sms-col .sms-btn-copy.secondary { background: #3a7bff; margin-top: 8px; }
+    .sms-col .sms-copy-note {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 6px;
+      line-height: 1.5;
+      min-height: 16px;
+    }
+    .sms-col .sms-saved-toast {
+      display: none;
+      font-size: 12px;
+      color: #1a9e5f;
+      text-align: center;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+    .sms-col .sms-saved-toast.show { display: block; }
+
+    @media (max-width: 1200px) {
+      .app-split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .call-col .layout,
+      .call-col .grid { grid-template-columns: 1fr; }
+      .call-col .btns { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <section class="wrap">
+    <div class="topbar">
+      <h1>CS Operation Tool</h1>
+    </div>
+    <p class="sub">좌측: 통화 분석 · 우측: 문자 템플릿</p>
+
+    <div class="app-split">
+      <!-- 좌측: 통화 분석 -->
+      <div class="app-col call-col">
+        <div class="col-title">통화 분석</div>
+        <div class="layout">
+          <div class="pane pane-basic">
+            <div class="pane-title">기본 정보</div>
+            <div class="field">
+              <label>내 이름</label>
+              <input id="operatorName" readonly />
+            </div>
+            <div class="field">
+              <label>내 이메일</label>
+              <input id="operatorEmail" readonly />
+            </div>
+            <div class="field">
+              <label>법인폰 번호</label>
+              <input id="corpPhone" placeholder="예: 010-XXXX-XXXX" />
+            </div>
+
+            <!-- 파드/활동 등록용 필드 (당분간 비표시) -->
+            <div class="pod-fields-hidden">
+              <input id="recordRef" type="text" />
+              <select id="targetSystem"></select>
+              <input id="callDatetimeKst" type="datetime-local" />
+              <select id="assigneeUserId"></select>
+              <select id="activityTypeKey"></select>
+              <input id="subject" value="통화 기록" />
+              <textarea id="specialNote"></textarea>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-actions">
+              <button id="btnTranscribe" type="button" onclick="onTranscribe()">전사 실행 (업로드 자동 전사)</button>
+              <button class="ghost" type="button" onclick="resetFormForNewAnalysis()">새로 분석하기</button>
+            </div>
+            <div class="pane-title">분석 및 실행</div>
+            <div class="field">
+              <div class="drive-rec-header">
+                <label>내 Drive 최근 녹음</label>
+                <button type="button" class="drive-rec-refresh" onclick="loadDriveRecordings(true)">새로고침</button>
+              </div>
+              <div id="driveRecAccount" class="drive-rec-account"></div>
+              <div id="driveRecList" class="drive-rec-list">
+                <div class="drive-rec-empty">불러오는 중...</div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="section-toggle-label collapsed" onclick="toggleSection(this,'uploadSection')">녹음 파일 (직접 업로드)</label>
+              <div id="uploadSection" class="section-collapsible hidden">
+                <input id="audioFile" type="file" accept=".mp3,.wav,.m4a,.mp4,.mpeg,.mpga,.webm,.flac,.ogg" style="display:none;" />
+                <div id="uploadZone" class="upload-zone">
+                  <div>
+                    <div class="upload-icon">⇪</div>
+                    <div class="upload-title">오디오 파일을 드래그하거나 클릭하여 선택</div>
+                    <div class="upload-sub">m4a, mp3, wav, mp4 (권장 100MB 이하)</div>
+                  </div>
+                </div>
+                <div id="fileMeta" class="file-meta"></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>대화 정리</label>
+              <textarea id="dialogue" placeholder="녹취 업로드 후 자동 생성됩니다." readonly></textarea>
+            </div>
+
+            <div class="btns">
+              <button id="btnCopy" type="button" class="copy" onclick="copyActivityPreview()">복사하기</button>
+              <button id="btnAbsent" type="button" class="copy" onclick="copyAbsentLine()">부재</button>
+              <button id="btnPhone" type="button" class="copy" onclick="copyCustomerPhone()" disabled>번호</button>
+              <button id="btnCreate" class="dark pod-fields-hidden" onclick="onCreate()">활동 생성</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <!-- 우측: 문자 템플릿 -->
+      <div class="app-col sms-col">
+        <div class="col-title">문자 템플릿</div>
+
+        <div class="sms-card">
+          <div class="sms-row2">
+            <div id="sms-name-wrap">
+              <div class="sms-field-label">이름</div>
+              <input type="text" id="sms-name" placeholder="예: 홍길동" oninput="smsRender()" />
+            </div>
+            <div id="sms-refund-wrap">
+              <div class="sms-field-label">환급 금액</div>
+              <input type="text" id="sms-refund" placeholder="예: 11,356,071" oninput="smsRender()" />
+            </div>
+          </div>
+          <div id="sms-link-wrap">
+            <hr class="sms-divider" />
+            <div class="sms-field-label">신청 링크</div>
+            <input type="text" id="sms-link" placeholder="https://..." oninput="smsRender()" />
+          </div>
+          <div id="sms-year-fields">
+            <hr class="sms-divider" />
+            <div class="sms-row2">
+              <div>
+                <div class="sms-field-label">시작 연도</div>
+                <input type="text" id="sms-year-start" placeholder="예: 2020" oninput="smsRender()" />
+              </div>
+              <div>
+                <div class="sms-field-label">종료 연도</div>
+                <input type="text" id="sms-year-end" placeholder="예: 2023" oninput="smsRender()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sms-card">
+          <div class="section-toggle-label collapsed" style="margin-bottom:8px;font-size:13px;font-weight:600;color:#374151;" onclick="toggleSection(this,'businessCardSection')">명함 이미지</div>
+          <div id="businessCardSection" class="section-collapsible hidden">
+          <div class="sms-row2">
+            <div>
+              <div class="sms-field-label" style="font-size:11px;">명함 1</div>
+              <div id="sms-upload-area-1" class="sms-img-upload-area"
+                   ondragover="smsOnDragOver(event,1)" ondragleave="smsOnDragLeave(1)" ondrop="smsOnDrop(event,1)">
+                <input type="file" accept="image/*" onchange="smsOnFileChange(event,1)" id="sms-file-input-1" />
+                <div style="font-size:18px;">🖼️</div>
+                <div class="upload-text">클릭 또는 드래그</div>
+              </div>
+              <div id="sms-img-preview-wrap-1" class="sms-img-preview-wrap">
+                <img id="sms-img-preview-1" class="sms-img-preview" alt="명함1" />
+                <button type="button" class="sms-btn-remove-img" onclick="smsRemoveImage(1)">×</button>
+              </div>
+              <div id="sms-img-status-1" class="sms-img-status">미등록</div>
+            </div>
+            <div>
+              <div class="sms-field-label" style="font-size:11px;">명함 2</div>
+              <div id="sms-upload-area-2" class="sms-img-upload-area"
+                   ondragover="smsOnDragOver(event,2)" ondragleave="smsOnDragLeave(2)" ondrop="smsOnDrop(event,2)">
+                <input type="file" accept="image/*" onchange="smsOnFileChange(event,2)" id="sms-file-input-2" />
+                <div style="font-size:18px;">🖼️</div>
+                <div class="upload-text">클릭 또는 드래그</div>
+              </div>
+              <div id="sms-img-preview-wrap-2" class="sms-img-preview-wrap">
+                <img id="sms-img-preview-2" class="sms-img-preview" alt="명함2" />
+                <button type="button" class="sms-btn-remove-img" onclick="smsRemoveImage(2)">×</button>
+              </div>
+              <div id="sms-img-status-2" class="sms-img-status">미등록</div>
+            </div>
+          </div>
+          <div class="sms-hint" style="margin-top:8px; margin-bottom:0;">한 번 등록하면 브라우저를 닫아도 유지됩니다.</div>
+          </div><!-- /businessCardSection -->
+        </div>
+
+        <div class="sms-tab-row" id="sms-tab-row"></div>
+
+        <div class="sms-card">
+          <div class="sms-section-header">
+            <div class="sms-field-label" style="margin-bottom:0;">템플릿 편집</div>
+            <button type="button" class="sms-btn-edit" onclick="smsToggleEdit()">✏️ 편집</button>
+          </div>
+          <div class="sms-edit-area" id="sms-edit-area">
+            <div class="sms-hint">{{이름}}, {{환급금액}}, {{링크}}, {{시작}}, {{종료}} 를 입력하면 자동으로 치환됩니다.</div>
+            <div class="sms-name-input-row">
+              <input type="text" id="sms-tpl-name-editor" placeholder="템플릿 이름" oninput="smsRenameTemplate()" />
+            </div>
+            <div class="sms-tag-row">
+              <button type="button" class="sms-tag" onclick="smsInsertTag('{{이름}}')">{{이름}}</button>
+              <button type="button" class="sms-tag" onclick="smsInsertTag('{{환급금액}}')">{{환급금액}}</button>
+              <button type="button" class="sms-tag" onclick="smsInsertTag('{{링크}}')">{{링크}}</button>
+              <button type="button" class="sms-tag" onclick="smsInsertTag('{{시작}}')">{{시작}}</button>
+              <button type="button" class="sms-tag" onclick="smsInsertTag('{{종료}}')">{{종료}}</button>
+            </div>
+            <textarea id="sms-tpl-editor" oninput="smsRender()"></textarea>
+            <button type="button" class="sms-btn-save" onclick="smsSaveTemplate()">저장</button>
+            <div class="sms-btn-row-flex">
+              <button type="button" class="sms-btn-reset" onclick="smsResetTemplate()">기본값으로 되돌리기</button>
+              <button type="button" class="sms-btn-delete" id="sms-btn-delete-tpl" onclick="smsDeleteCurrentTemplate()">템플릿 삭제</button>
+            </div>
+            <div class="sms-saved-toast" id="sms-saved-toast">✓ 저장되었습니다</div>
+          </div>
+        </div>
+
+        <div class="sms-card">
+          <div class="sms-field-label">미리보기</div>
+          <div class="sms-preview-box" id="sms-preview"></div>
+          <button type="button" class="sms-btn-copy" id="sms-copybtn-text" onclick="smsDoCopyText()">
+            <span id="sms-copylabel-text">① 문자 텍스트 복사</span>
+          </button>
+          <button type="button" class="sms-btn-copy secondary" id="sms-copybtn-img" onclick="smsDoCopyMergedImage()">
+            <span id="sms-copylabel-img">② 명함 이미지 복사</span>
+          </button>
+          <div class="sms-copy-note">구글 메시지에서 ① → ② 순서로 붙여넣기 하면 됩니다</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ===== 통화 분석 ===== */
+    let allAssignees = [];
+    let durationSec = 0;
+    let selectedFile = null;
+    let selectedDriveFile = null;
+    let customerPhoneFromFile = "";
+    let currentUserName = "";
+    let defaultAssigneeUserId = "";
+
+    function setStatus(type, message) {
+      const box = document.getElementById("status");
+      box.className = "status " + type;
+      box.textContent = message;
+    }
+
+    function clearStatus() {
+      const box = document.getElementById("status");
+      box.className = "status";
+      box.textContent = "";
+    }
+
+    function requireValue(id, label) {
+      const v = (document.getElementById(id).value || "").trim();
+      if (!v) throw new Error(label + " 입력이 필요합니다.");
+      return v;
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const s = String(reader.result || "");
+          resolve(s.split(",")[1] || "");
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function onLoadInit() {
+      google.script.run
+        .withSuccessHandler((res) => {
+          document.getElementById("operatorName").value = res.userName || "";
+          document.getElementById("operatorEmail").value = res.email || "";
+          currentUserName = String(res.userName || "").trim();
+          defaultAssigneeUserId = String(res.defaultAssigneeUserId || "").trim();
+          allAssignees = res.assignees || [];
+
+          const targets = document.getElementById("targetSystem");
+          targets.innerHTML = "";
+          (res.targets || []).forEach((t) => {
+            const o = document.createElement("option");
+            o.value = t.key;
+            o.textContent = t.label;
+            targets.appendChild(o);
+          });
+          const hasRefund = (res.targets || []).some((t) => String(t.key || "").toUpperCase() === "REFUND");
+          if (hasRefund) targets.value = "REFUND";
+          targets.addEventListener("change", renderAssigneesByTarget);
+          renderAssigneesByTarget();
+
+          const activityTypes = document.getElementById("activityTypeKey");
+          activityTypes.innerHTML = "";
+          (res.activityTypes || []).forEach((t) => {
+            const o = document.createElement("option");
+            o.value = t.key;
+            o.textContent = t.name;
+            activityTypes.appendChild(o);
+          });
+          if (activityTypes.options.length > 0) activityTypes.selectedIndex = 0;
+          activityTypes.addEventListener("change", applySubjectFromActivityType);
+          applySubjectFromActivityType();
+
+          const audioInput = document.getElementById("audioFile");
+          const uploadZone = document.getElementById("uploadZone");
+          const fileMeta = document.getElementById("fileMeta");
+
+          uploadZone.addEventListener("click", () => audioInput.click());
+          uploadZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadZone.classList.add("dragover");
+          });
+          uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+          uploadZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove("dragover");
+            const f = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+            if (f) handleSelectedFile(f);
+          });
+
+          audioInput.addEventListener("click", () => { audioInput.value = ""; });
+          audioInput.addEventListener("change", () => {
+            const f = audioInput.files && audioInput.files[0] ? audioInput.files[0] : null;
+            if (f) handleSelectedFile(f);
+          });
+
+          const corpInput = document.getElementById("corpPhone");
+          corpInput.addEventListener("blur", () => {
+            corpInput.value = normalizeCorpPhone(corpInput.value);
+          });
+
+          function handleSelectedFile(file) {
+            selectedFile = file;
+            selectedDriveFile = null;
+            customerPhoneFromFile = parsePhoneFromRecordingName(file.name);
+            updatePhoneButton(false);
+            fileMeta.style.display = "block";
+            fileMeta.textContent = `${file.name} (${formatBytes(file.size)})`;
+            autoFillCallDatetimeFromFileName(file.name);
+            onTranscribe(true);
+          }
+
+          loadDriveRecordings(false);
+        })
+        .withFailureHandler((err) => setStatus("err", String(err.message || err)))
+        .getInitData();
+    }
+
+    function getCurrentFile() {
+      const inputFile = document.getElementById("audioFile").files[0];
+      return selectedFile || inputFile || null;
+    }
+
+    function formatBytes(bytes) {
+      const n = Number(bytes || 0);
+      if (n < 1024) return `${n} B`;
+      const kb = n / 1024;
+      if (kb < 1024) return `${kb.toFixed(1)} KB`;
+      return `${(kb / 1024).toFixed(1)} MB`;
+    }
+
+    function autoFillCallDatetimeFromFileName(fileName) {
+      const dtInput = document.getElementById("callDatetimeKst");
+      if (!dtInput) return;
+      const name = String(
+        fileName ||
+        (selectedDriveFile && selectedDriveFile.name) ||
+        (getCurrentFile() && getCurrentFile().name) ||
+        ""
+      );
+
+      if (!name) return;
+
+      let m = name.match(/(?:^|[^0-9])(\d{6})[_-](\d{6})(?:[^0-9]|$)/);
+      if (m) {
+        const y = Number(m[1].slice(0, 2));
+        const mm = m[1].slice(2, 4);
+        const dd = m[1].slice(4, 6);
+        const hh = m[2].slice(0, 2);
+        const mi = m[2].slice(2, 4);
+        const yyyy = y >= 70 ? 1900 + y : 2000 + y;
+        dtInput.value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+        return;
+      }
+
+      m = name.match(/(?:^|[^0-9])(\d{8})[_-](\d{6})(?:[^0-9]|$)/);
+      if (m) {
+        dtInput.value = `${m[1].slice(0, 4)}-${m[1].slice(4, 6)}-${m[1].slice(6, 8)}T${m[2].slice(0, 2)}:${m[2].slice(2, 4)}`;
+      }
+    }
+
+    function renderAssigneesByTarget() {
+      const target = (document.getElementById("targetSystem").value || "").trim().toUpperCase();
+      const assignees = document.getElementById("assigneeUserId");
+      assignees.innerHTML = "";
+
+      allAssignees.filter((a) => {
+        const tk = String(a.targetKey || "").trim().toUpperCase();
+        return tk === "" || tk === target;
+      }).forEach((a) => {
+        const o = document.createElement("option");
+        o.value = a.userId;
+        o.textContent = `${a.name}`;
+        o.dataset.corpPhone = a.corpPhone || "";
+        assignees.appendChild(o);
+      });
+
+      if (defaultAssigneeUserId) {
+        const idx = Array.from(assignees.options).findIndex((o) => String(o.value) === defaultAssigneeUserId);
+        if (idx >= 0) assignees.selectedIndex = idx;
+      } else if (currentUserName) {
+        const idx = Array.from(assignees.options).findIndex((o) => String(o.textContent || "").trim() === currentUserName);
+        if (idx >= 0) assignees.selectedIndex = idx;
+      }
+
+      assignees.removeEventListener("change", applyAssigneeCorpPhone);
+      assignees.addEventListener("change", applyAssigneeCorpPhone);
+      applyAssigneeCorpPhone();
+    }
+
+    function applyAssigneeCorpPhone() {
+      const sel = document.getElementById("assigneeUserId");
+      const corp = document.getElementById("corpPhone");
+      if (!sel || !corp) return;
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt) return;
+      const phone = String(opt.dataset.corpPhone || "").trim();
+      if (phone) corp.value = normalizeCorpPhone(phone);
+    }
+
+    function normalizeCorpPhone(raw) {
+      let digits = String(raw || "").replace(/\D/g, "");
+      if (!digits) return "";
+      if (digits.startsWith("82")) digits = "0" + digits.slice(2);
+      if (digits.length === 10 && digits.startsWith("10")) digits = "0" + digits;
+      return digits;
+    }
+
+    // 예: 통화 녹음 010-XXXX-XXXX_260716_163329.m4a
+    function parsePhoneFromRecordingName(fileName) {
+      const name = String(fileName || "");
+      let m = name.match(/(?:^|[^0-9])(0?1\d{8,9})[_-]\d{6}[_-]\d{6}/);
+      if (m) return normalizeCorpPhone(m[1]);
+      m = name.match(/(?:^|[^0-9])(0?1\d{8,9})(?:[^0-9]|$)/);
+      if (m) return normalizeCorpPhone(m[1]);
+      return "";
+    }
+
+    function updatePhoneButton(enable) {
+      const btn = document.getElementById("btnPhone");
+      if (!btn) return;
+      const phone = String(customerPhoneFromFile || "").trim();
+      btn.disabled = !(enable && phone);
+      btn.title = phone ? phone : "파일명에서 고객 번호를 찾지 못했습니다";
+    }
+
+    function showCopyComplete(buttonId, originalLabel) {
+      const btn = document.getElementById(buttonId);
+      if (!btn) return;
+      if (btn._copyResetTimer) clearTimeout(btn._copyResetTimer);
+      btn.textContent = "✓ 복사 완료!";
+      btn.classList.add("ok");
+      btn._copyResetTimer = setTimeout(() => {
+        btn.classList.remove("ok");
+        btn.textContent = originalLabel;
+        btn._copyResetTimer = null;
+      }, 2000);
+    }
+
+    async function copyCustomerPhone() {
+      try {
+        const phone = String(customerPhoneFromFile || "").trim();
+        if (!phone) throw new Error("파일명에서 고객 번호를 찾지 못했습니다.");
+        await navigator.clipboard.writeText(phone);
+        showCopyComplete("btnPhone", "번호");
+        setStatus("ok", "고객 번호를 복사했습니다.\n" + phone);
+      } catch (e) {
+        setStatus("err", String(e.message || e) || "번호 복사에 실패했습니다.");
+      }
+    }
+
+    function getKstNowText() {
+      return new Date().toLocaleString("sv-SE", { timeZone: "Asia/Seoul" }).replace("T", " ").replace(",", "");
+    }
+
+    function buildActivityPreviewText() {
+      const line1 = `${getKstNowText()} / ${String(document.getElementById("operatorName").value || "").trim()} / ${normalizeCorpPhone(document.getElementById("corpPhone").value || "")}`;
+      const special = String(document.getElementById("specialNote").value || "").trim();
+      const dialogue = String(document.getElementById("dialogue").value || "").trim();
+      return [
+        line1,
+        special ? `[특이사항] ${special}` : "[특이사항 없음]",
+        dialogue ? `[대화 정리]\n${dialogue}` : "[대화 정리 없음]",
+      ].join("\n\n");
+    }
+
+    function buildAbsentLine() {
+      const name = String(document.getElementById("operatorName").value || "").trim();
+      const phone = normalizeCorpPhone(document.getElementById("corpPhone").value || "");
+      return `${getKstNowText()} / ${name} / ${phone}`;
+    }
+
+    async function copyAbsentLine() {
+      try {
+        const phone = normalizeCorpPhone(document.getElementById("corpPhone").value || "");
+        if (!phone) throw new Error("법인폰 번호를 먼저 확인해 주세요.");
+        const text = buildAbsentLine();
+        await navigator.clipboard.writeText(text);
+        showCopyComplete("btnAbsent", "부재");
+        setStatus("ok", "부재 메모를 복사했습니다.\n" + text);
+      } catch (e) {
+        setStatus("err", String(e.message || e) || "복사에 실패했습니다.");
+      }
+    }
+
+    async function copyActivityPreview() {
+      try {
+        await navigator.clipboard.writeText(buildActivityPreviewText());
+        showCopyComplete("btnCopy", "복사하기");
+        setStatus("ok", "활동 메모 형식으로 복사했습니다.");
+      } catch (e) {
+        setStatus("err", "복사에 실패했습니다. 브라우저 권한을 확인해 주세요.");
+      }
+    }
+
+    function applySubjectFromActivityType() {
+      const subject = document.getElementById("subject");
+      const typeSel = document.getElementById("activityTypeKey");
+      if (!subject || !typeSel) return;
+      const selectedName = String((typeSel.selectedOptions[0] || {}).textContent || "").trim();
+      if (!selectedName) return;
+      const current = String(subject.value || "").trim();
+      const autoSet = new Set(["", "통화 기록", "Refund Recontact Campaign 차", "취소방어 차"]);
+      if (!autoSet.has(current)) return;
+      if (selectedName === "Refund Recontact Campaign") { subject.value = "Refund Recontact Campaign 차"; return; }
+      if (selectedName === "취소방어") { subject.value = "취소방어 차"; return; }
+      subject.value = `${selectedName} 차`;
+    }
+
+    function loadDriveRecordings(showToast) {
+      const list = document.getElementById("driveRecList");
+      const accountBox = document.getElementById("driveRecAccount");
+      if (!list) return;
+      list.innerHTML = '<div class="drive-rec-empty">불러오는 중...</div>';
+      if (accountBox) accountBox.textContent = "";
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          const files = (res && res.files) || [];
+          const loginEmail = String((res && res.loginEmail) || document.getElementById("operatorEmail").value || "").trim();
+          const driveEmail = String((res && res.driveAccountEmail) || "").trim();
+
+          if (accountBox) {
+            if (res && res.driveMismatch) {
+              accountBox.className = "drive-rec-account warn";
+              accountBox.innerHTML =
+                "⚠️ Drive 조회 계정: <b>" + escapeHtml(driveEmail) + "</b><br>" +
+                "로그인 계정(" + escapeHtml(loginEmail) + ")과 다릅니다.<br>" +
+                "배포 설정을 <b>웹 앱에 액세스하는 사용자</b>로 실행하도록 변경해 주세요.";
+            } else if (driveEmail) {
+              accountBox.className = "drive-rec-account";
+              accountBox.textContent = "Drive 조회 계정: " + driveEmail;
+            } else {
+              accountBox.className = "drive-rec-account";
+              accountBox.textContent = "";
+            }
+          }
+
+          if (!files.length) {
+            list.innerHTML =
+              '<div class="drive-rec-empty">최근 녹음이 없습니다.<br>본인 Drive에 녹음 폴더가 있는지 확인해 주세요.</div>';
+            return;
+          }
+          list.innerHTML = "";
+          files.forEach((f) => {
+            const row = document.createElement("div");
+            row.className = "drive-rec-item-row";
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "drive-rec-item" + (selectedDriveFile && selectedDriveFile.id === f.id ? " active" : "");
+            btn.onclick = () => onDriveRecordingSelect(f);
+            btn.innerHTML =
+              '<div class="drive-rec-name">' + escapeHtml(f.name || "") + "</div>" +
+              '<div class="drive-rec-meta">' + escapeHtml(f.modifiedAt || "") + " · " + formatBytes(f.size || 0) + "</div>";
+
+            const dl = document.createElement("a");
+            dl.className = "drive-rec-dl";
+            dl.title = "다운로드";
+            dl.href = "https://drive.google.com/uc?export=download&id=" + encodeURIComponent(f.id);
+            dl.target = "_blank";
+            dl.rel = "noopener";
+            dl.textContent = "⬇";
+
+            row.appendChild(btn);
+            row.appendChild(dl);
+            list.appendChild(row);
+          });
+          if (showToast) setStatus("ok", "Drive 녹음 목록을 새로고침했습니다.");
+        })
+        .withFailureHandler((err) => {
+          list.innerHTML =
+            '<div class="drive-rec-empty">Drive 목록을 불러오지 못했습니다.<br>' +
+            escapeHtml(String(err.message || err)) +
+            "</div>";
+        })
+        .listDriveRecordings({ limit: 15 });
+    }
+
+    function toggleSection(label, sectionId) {
+      const section = document.getElementById(sectionId);
+      if (!section) return;
+      const isHidden = section.classList.toggle("hidden");
+      label.classList.toggle("collapsed", isHidden);
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function onDriveRecordingSelect(file) {
+      if (!file || !file.id) return;
+      selectedDriveFile = { id: file.id, name: file.name || "" };
+      selectedFile = null;
+      customerPhoneFromFile = parsePhoneFromRecordingName(file.name);
+      updatePhoneButton(false);
+      const audioInput = document.getElementById("audioFile");
+      if (audioInput) audioInput.value = "";
+
+      const fileMeta = document.getElementById("fileMeta");
+      if (fileMeta) {
+        fileMeta.style.display = "block";
+        fileMeta.textContent = `Drive: ${file.name} (${formatBytes(file.size || 0)})`;
+      }
+
+      autoFillCallDatetimeFromFileName(file.name);
+      document.querySelectorAll(".drive-rec-item").forEach((el) => el.classList.remove("active"));
+      document.querySelectorAll(".drive-rec-item").forEach((el) => {
+        if (el.querySelector(".drive-rec-name") && el.querySelector(".drive-rec-name").textContent === file.name) {
+          el.classList.add("active");
+        }
+      });
+
+      const btn = document.getElementById("btnTranscribe");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "전사 중...";
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          document.getElementById("dialogue").value = res.dialogue || "";
+          durationSec = Number(res.durationSec || 0);
+          if (!customerPhoneFromFile) {
+            customerPhoneFromFile = parsePhoneFromRecordingName(file.name || res.fileName || "");
+          }
+          updatePhoneButton(true);
+          setStatus("ok", "Drive 녹음 전사 완료. 대화정리 확인 후 등록해 주세요.");
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "전사 실행 (업로드 자동 전사)";
+          }
+        })
+        .withFailureHandler((err) => {
+          setStatus("err", String(err.message || err));
+          updatePhoneButton(false);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "전사 실행 (업로드 자동 전사)";
+          }
+        })
+        .transcribeCallFromDrive({ fileId: file.id });
+    }
+
+    async function onTranscribe(isAuto) {
+      try {
+        const file = getCurrentFile();
+        if (!file) {
+          if (!isAuto) throw new Error("녹음 파일을 선택해 주세요.");
+          return;
+        }
+
+        const btn = document.getElementById("btnTranscribe");
+        btn.disabled = true;
+        btn.textContent = "전사 중...";
+
+        const dtInput = document.getElementById("callDatetimeKst");
+        if (dtInput && !String(dtInput.value || "").trim()) {
+          autoFillCallDatetimeFromFileName();
+        }
+
+        const base64Audio = await fileToBase64(file);
+        selectedDriveFile = null;
+        if (!base64Audio) {
+          throw new Error("파일을 읽을 수 없습니다. 파일을 다시 선택해 주세요.");
+        }
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            document.getElementById("dialogue").value = res.dialogue || "";
+            durationSec = Number(res.durationSec || 0);
+            if (!customerPhoneFromFile) {
+              customerPhoneFromFile = parsePhoneFromRecordingName(file.name);
+            }
+            updatePhoneButton(true);
+            setStatus("ok", "전사 완료. 대화정리 확인 후 특이사항/활동유형을 선택하고 등록해 주세요.");
+            btn.disabled = false;
+            btn.textContent = "전사 실행 (업로드 자동 전사)";
+          })
+          .withFailureHandler((err) => {
+            setStatus("err", String(err.message || err));
+            updatePhoneButton(false);
+            btn.disabled = false;
+            btn.textContent = "전사 실행 (업로드 자동 전사)";
+          })
+          .transcribeCall({
+            fileName: file.name,
+            mimeType: file.type || "application/octet-stream",
+            base64Audio: base64Audio,
+          });
+      } catch (e) {
+        setStatus("err", String(e.message || e));
+      }
+    }
+
+    async function onCreate() {
+      clearStatus();
+      try {
+        const req = {
+          recordRef: requireValue("recordRef", "리드/거래 URL 또는 ID"),
+          callDatetimeKst: requireValue("callDatetimeKst", "통화 일시"),
+          subject: requireValue("subject", "제목"),
+          specialNote: (document.getElementById("specialNote").value || "").trim(),
+          assigneeUserId: requireValue("assigneeUserId", "담당자"),
+          activityTypeKey: requireValue("activityTypeKey", "활동 유형"),
+          activityTypeName: (document.getElementById("activityTypeKey").selectedOptions[0] || {}).textContent || "",
+          targetSystem: requireValue("targetSystem", "파드 구분"),
+          corpPhone: normalizeCorpPhone(requireValue("corpPhone", "법인폰 번호")),
+          dialogue: requireValue("dialogue", "대화 정리"),
+          durationSec: durationSec,
+        };
+
+        const btn = document.getElementById("btnCreate");
+        btn.disabled = true;
+        btn.textContent = "처리 중...";
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            document.getElementById("dialogue").value = res.dialogue || "";
+            setStatus("ok", "등록 완료: activity_id=" + res.activityId);
+            btn.disabled = false;
+            btn.textContent = "활동 생성";
+          })
+          .withFailureHandler((err) => {
+            setStatus("err", String(err.message || err));
+            btn.disabled = false;
+            btn.textContent = "활동 생성";
+          })
+          .createCallActivity(req);
+      } catch (e) {
+        setStatus("err", String(e.message || e));
+      }
+    }
+
+    function resetFormForNewAnalysis() {
+      clearStatus();
+      durationSec = 0;
+      selectedFile = null;
+      selectedDriveFile = null;
+      customerPhoneFromFile = "";
+      updatePhoneButton(false);
+      ["recordRef", "callDatetimeKst", "specialNote", "audioFile", "dialogue"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.value = "";
+      });
+      const subject = document.getElementById("subject");
+      if (subject) subject.value = "";
+      applySubjectFromActivityType();
+      const fileMeta = document.getElementById("fileMeta");
+      if (fileMeta) { fileMeta.style.display = "none"; fileMeta.textContent = ""; }
+      const hasRefund = Array.from(document.getElementById("targetSystem").options || [])
+        .some((o) => String(o.value || "").toUpperCase() === "REFUND");
+      if (hasRefund) document.getElementById("targetSystem").value = "REFUND";
+      renderAssigneesByTarget();
+      ["btnTranscribe", "btnCreate", "btnCopy"].forEach((id, i) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = false;
+        btn.textContent = ["전사 실행 (업로드 자동 전사)", "활동 생성", "복사하기"][i];
+      });
+      setStatus("ok", "입력값을 초기화했습니다. 새 통화를 분석해 주세요.");
+      loadDriveRecordings(false);
+    }
+
+    /* ===== 문자 템플릿 ===== */
+    const SMS_MAX_TEMPLATES = 10;
+    const SMS_FACTORY_DEFAULTS = [
+      { id: 1, name: "콜 후 문자", body: "안녕하세요 {{이름}} 사장님.\n방금 통화드린 Tax SaaS 매니저입니다.\n유선으로 안내드린바와 같이 산출된 환급액은 약 {{환급금액}} 입니다.\n아래 링크를 클릭하여 신청 진행해주시면 됩니다.\n\n{{링크}}\n\n궁금하신점이 있으시면 언제든지 연락주세요. 감사합니다." },
+      { id: 2, name: "콜 전 문자", body: "{{이름}} 사장님 안녕하세요.\n환급 조회하신 Tax SaaS 담당자입니다.\n산출된 환급액 {{환급금액}} 관련하여\n유선상담 드리고자 연락드렸습니다.\n통화 가능하실까요?" },
+      {
+        id: 3,
+        name: "필요서류 안내",
+        body:
+          "안녕하세요!\n모든 사장님을 위한 환급, Tax Refund SaaS입니다.\n신청하신 환급 검토를 위해 필요한 서류를 안내드려요.\n\n" +
+          "■ 필요서류 : {{시작}}년 ~ {{종료}}년 종합소득세 경정청구 신고서\n\n" +
+          "■ 서류발급 방법 : 아래 3가지 중 편하신 방법으로 진행\n\n" +
+          "1.알림톡 통해 신분증 제출 : 대표님이 직접 수취하실 필요 없이 저희가 대리하여 방문합니다.\n(회계 법인 담당자 외에는 확인할 수 없으니 안심하세요.)\n\n" +
+          "2.의뢰했던 업체에서 수취 가능\n\n" +
+          "3.관할세무서에서 직접 수취 가능 (신분증 지참)\n\n" +
+          "만약 신고서 제출이 불가하다면, 환급이 중단될 수 있어요.\n\n감사합니다.",
+      },
+    ];
+
+    const SMS_VAR_DEFS = [
+      { key: "이름", inputId: "sms-name", suffix: "" },
+      { key: "환급금액", inputId: "sms-refund", suffix: "원" },
+      { key: "링크", inputId: "sms-link", suffix: "" },
+      { key: "시작", inputId: "sms-year-start", suffix: "" },
+      { key: "종료", inputId: "sms-year-end", suffix: "" },
+    ];
+
+    let smsTemplates = [];
+    let smsActiveId = 1;
+    let smsNextId = 1;
+    let smsSavedImages = { 1: null, 2: null };
+    let smsMergedImageBlob = null;
+    let smsMergedImageCanvas = null;
+
+    function smsLoadTemplates() {
+      const saved = localStorage.getItem("templates_v3") || localStorage.getItem("templates_v2");
+      let templates = [];
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) templates = parsed;
+        } catch (e) {}
+      }
+      if (!templates.length) {
+        return JSON.parse(JSON.stringify(SMS_FACTORY_DEFAULTS));
+      }
+      SMS_FACTORY_DEFAULTS.forEach((factory) => {
+        if (!templates.some((t) => t.id === factory.id)) {
+          templates.push(JSON.parse(JSON.stringify(factory)));
+        }
+      });
+      return templates;
+    }
+
+    function smsPersistTemplates() {
+      localStorage.setItem("templates_v3", JSON.stringify(smsTemplates));
+    }
+
+    function smsGetTemplate(id) {
+      return smsTemplates.find((t) => t.id === id);
+    }
+
+    function smsEscapeHtml(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function smsVal(id) {
+      return (document.getElementById(id).value || "").trim();
+    }
+
+    function smsRenderTabs() {
+      const row = document.getElementById("sms-tab-row");
+      row.innerHTML = "";
+      smsTemplates.forEach((t, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sms-tab" + (t.id === smsActiveId ? " active" : "");
+        btn.onclick = () => smsSwitchTab(t.id);
+        btn.innerHTML = "템플릿 " + (idx + 1) + "<span>" + smsEscapeHtml(t.name || "이름없음") + "</span>";
+        row.appendChild(btn);
+      });
+      if (smsTemplates.length < SMS_MAX_TEMPLATES) {
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "sms-btn-add-tab";
+        addBtn.textContent = "+ 템플릿 추가";
+        addBtn.onclick = smsAddTemplate;
+        row.appendChild(addBtn);
+      }
+    }
+
+    function smsAddTemplate() {
+      if (smsTemplates.length >= SMS_MAX_TEMPLATES) {
+        alert("템플릿은 최대 " + SMS_MAX_TEMPLATES + "개까지 만들 수 있습니다.");
+        return;
+      }
+      const newTpl = { id: smsNextId++, name: "새 템플릿", body: "안녕하세요 {{이름}} 사장님.\n" };
+      smsTemplates.push(newTpl);
+      smsPersistTemplates();
+      smsActiveId = newTpl.id;
+      smsRenderTabs();
+      document.getElementById("sms-edit-area").classList.add("open");
+      smsLoadEditorForActive();
+      smsRender();
+    }
+
+    function smsDeleteCurrentTemplate() {
+      if (smsTemplates.length <= 1) {
+        alert("최소 1개의 템플릿은 남아있어야 합니다.");
+        return;
+      }
+      if (!confirm('"' + smsGetTemplate(smsActiveId).name + '" 템플릿을 삭제할까요?')) return;
+      smsTemplates = smsTemplates.filter((t) => t.id !== smsActiveId);
+      smsPersistTemplates();
+      smsActiveId = smsTemplates[0].id;
+      smsRenderTabs();
+      smsLoadEditorForActive();
+      smsRender();
+    }
+
+    function smsSwitchTab(id) {
+      smsActiveId = id;
+      smsRenderTabs();
+      smsUpdateFieldVisibility();
+      smsLoadEditorForActive();
+      smsRender();
+    }
+
+    function smsUpdateFieldVisibility() {
+      const tpl = smsGetTemplate(smsActiveId);
+      const body = String((tpl && tpl.body) || "");
+      const uses = (key) => body.indexOf("{{" + key + "}}") >= 0;
+
+      document.getElementById("sms-link-wrap").style.display = uses("링크") ? "" : "none";
+      document.getElementById("sms-year-fields").style.display =
+        uses("시작") || uses("종료") ? "" : "none";
+
+      const nameWrap = document.getElementById("sms-name-wrap");
+      const refundWrap = document.getElementById("sms-refund-wrap");
+      if (nameWrap) nameWrap.style.display = uses("이름") ? "" : "none";
+      if (refundWrap) refundWrap.style.display = uses("환급금액") ? "" : "none";
+    }
+
+    function smsLoadEditorForActive() {
+      const t = smsGetTemplate(smsActiveId);
+      document.getElementById("sms-tpl-name-editor").value = t.name;
+      document.getElementById("sms-tpl-editor").value = t.body;
+    }
+
+    function smsToggleEdit() {
+      const area = document.getElementById("sms-edit-area");
+      const isOpen = area.classList.toggle("open");
+      if (isOpen) {
+        smsLoadEditorForActive();
+        smsUpdateFieldVisibilityFromEditor();
+      } else {
+        smsUpdateFieldVisibility();
+      }
+      document.getElementById("sms-btn-delete-tpl").style.display = smsTemplates.length <= 1 ? "none" : "";
+    }
+
+    function smsInsertTag(tag) {
+      const ta = document.getElementById("sms-tpl-editor");
+      const s = ta.selectionStart;
+      const e = ta.selectionEnd;
+      ta.value = ta.value.substring(0, s) + tag + ta.value.substring(e);
+      ta.selectionStart = ta.selectionEnd = s + tag.length;
+      ta.focus();
+      smsRender();
+    }
+
+    function smsRenameTemplate() {
+      smsRender();
+    }
+
+    function smsSaveTemplate() {
+      const t = smsGetTemplate(smsActiveId);
+      t.name = document.getElementById("sms-tpl-name-editor").value.trim() || "이름없음";
+      t.body = document.getElementById("sms-tpl-editor").value;
+      smsPersistTemplates();
+      smsRenderTabs();
+      const toast = document.getElementById("sms-saved-toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+      smsRender();
+    }
+
+    function smsResetTemplate() {
+      const factoryMatch = SMS_FACTORY_DEFAULTS.find((d) => d.id === smsActiveId);
+      if (!factoryMatch) {
+        alert("이 템플릿은 기본값이 없습니다. 직접 수정하거나 삭제해주세요.");
+        return;
+      }
+      if (!confirm("기본값으로 되돌릴까요?")) return;
+      const t = smsGetTemplate(smsActiveId);
+      t.name = factoryMatch.name;
+      t.body = factoryMatch.body;
+      smsPersistTemplates();
+      smsLoadEditorForActive();
+      smsRenderTabs();
+      smsRender();
+    }
+
+    function smsApplyReplacements(text, mode) {
+      let out = String(text || "");
+      SMS_VAR_DEFS.forEach((v) => {
+        const raw = smsVal(v.inputId);
+        const token = "{{" + v.key + "}}";
+        const regex = new RegExp("\\{\\{" + v.key + "\\}\\}", "g");
+        if (mode === "html") {
+          const display = raw ? smsEscapeHtml(raw + v.suffix) : "";
+          out = out.replace(
+            regex,
+            display
+              ? '<span class="hl">' + display + "</span>"
+              : '<span class="ph">' + token + "</span>"
+          );
+        } else {
+          out = out.replace(regex, raw ? raw + v.suffix : token);
+        }
+      });
+      return out;
+    }
+
+    function smsRender() {
+      const inEdit = document.getElementById("sms-edit-area").classList.contains("open");
+      const tplBody = inEdit ? document.getElementById("sms-tpl-editor").value : smsGetTemplate(smsActiveId).body;
+      document.getElementById("sms-preview").innerHTML = smsApplyReplacements(tplBody, "html");
+      if (inEdit) smsUpdateFieldVisibilityFromEditor();
+    }
+
+    function smsUpdateFieldVisibilityFromEditor() {
+      const body = document.getElementById("sms-tpl-editor").value || "";
+      const uses = (key) => body.indexOf("{{" + key + "}}") >= 0;
+      document.getElementById("sms-link-wrap").style.display = uses("링크") ? "" : "none";
+      document.getElementById("sms-year-fields").style.display =
+        uses("시작") || uses("종료") ? "" : "none";
+      const nameWrap = document.getElementById("sms-name-wrap");
+      const refundWrap = document.getElementById("sms-refund-wrap");
+      if (nameWrap) nameWrap.style.display = uses("이름") ? "" : "none";
+      if (refundWrap) refundWrap.style.display = uses("환급금액") ? "" : "none";
+    }
+
+    function smsPlain() {
+      return smsApplyReplacements(smsGetTemplate(smsActiveId).body, "plain");
+    }
+
+    function smsOnFileChange(e, n) {
+      const f = e.target.files[0];
+      if (f) smsLoadImage(f, n);
+    }
+    function smsOnDragOver(e, n) {
+      e.preventDefault();
+      document.getElementById("sms-upload-area-" + n).classList.add("dragover");
+    }
+    function smsOnDragLeave(n) {
+      document.getElementById("sms-upload-area-" + n).classList.remove("dragover");
+    }
+    function smsOnDrop(e, n) {
+      e.preventDefault();
+      document.getElementById("sms-upload-area-" + n).classList.remove("dragover");
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith("image/")) smsLoadImage(f, n);
+    }
+
+    function smsLoadImage(file, n) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        smsSavedImages[n] = e.target.result;
+        localStorage.setItem("cardImage" + n, smsSavedImages[n]);
+        smsShowImagePreview(n, smsSavedImages[n]);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function smsShowImagePreview(n, dataUrl) {
+      document.getElementById("sms-upload-area-" + n).style.display = "none";
+      document.getElementById("sms-img-preview-" + n).src = dataUrl;
+      document.getElementById("sms-img-preview-wrap-" + n).style.display = "block";
+      const st = document.getElementById("sms-img-status-" + n);
+      st.textContent = "✓ 등록됨";
+      st.className = "sms-img-status active";
+      smsUpdateMergedPreview();
+    }
+
+    function smsRemoveImage(n) {
+      smsSavedImages[n] = null;
+      localStorage.removeItem("cardImage" + n);
+      document.getElementById("sms-upload-area-" + n).style.display = "";
+      document.getElementById("sms-img-preview-wrap-" + n).style.display = "none";
+      document.getElementById("sms-img-preview-" + n).src = "";
+      document.getElementById("sms-file-input-" + n).value = "";
+      const st = document.getElementById("sms-img-status-" + n);
+      st.textContent = "미등록";
+      st.className = "sms-img-status";
+      smsUpdateMergedPreview();
+    }
+
+    async function smsBuildMergedImage() {
+      const urls = [smsSavedImages[1], smsSavedImages[2]].filter(Boolean);
+      if (!urls.length) return null;
+
+      const MAX_WIDTH = 800;
+      const bitmaps = await Promise.all(urls.map(async (u) => {
+        const res = await fetch(u);
+        return createImageBitmap(await res.blob());
+      }));
+
+      if (bitmaps.length === 1) {
+        const b = bitmaps[0];
+        const targetW = Math.min(b.width, MAX_WIDTH);
+        const targetH = b.height * (targetW / b.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = targetW;
+        canvas.height = targetH;
+        canvas.getContext("2d").drawImage(b, 0, 0, targetW, targetH);
+        return canvas;
+      }
+
+      const gap = 12;
+      const narrowestWidth = Math.min(...bitmaps.map((b) => b.width));
+      const targetWidth = Math.min(narrowestWidth, MAX_WIDTH);
+      const scaled = bitmaps.map((b) => {
+        const ratio = targetWidth / b.width;
+        return { bitmap: b, w: targetWidth, h: b.height * ratio };
+      });
+      const totalHeight = scaled.reduce((sum, s) => sum + s.h, 0) + gap;
+      const canvas = document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      let y = 0;
+      scaled.forEach((s, i) => {
+        ctx.drawImage(s.bitmap, 0, y, s.w, s.h);
+        y += s.h + (i === 0 ? gap : 0);
+      });
+      return canvas;
+    }
+
+    async function smsUpdateMergedPreview() {
+      const canvas = await smsBuildMergedImage();
+      if (!canvas) {
+        smsMergedImageBlob = null;
+        smsMergedImageCanvas = null;
+        return;
+      }
+      smsMergedImageCanvas = canvas;
+      canvas.toBlob((blob) => { smsMergedImageBlob = blob; }, "image/jpeg", 0.85);
+    }
+
+    async function smsDoCopyText() {
+      const btn = document.getElementById("sms-copybtn-text");
+      const label = document.getElementById("sms-copylabel-text");
+      try {
+        await navigator.clipboard.writeText(smsPlain());
+        label.textContent = "✓ 복사 완료!";
+        btn.classList.add("ok");
+        setTimeout(() => {
+          btn.classList.remove("ok");
+          label.textContent = "① 문자 텍스트 복사";
+        }, 2000);
+      } catch (e) {
+        alert("복사에 실패했습니다. 다시 시도해주세요.");
+      }
+    }
+
+    async function smsDoCopyMergedImage() {
+      const btn = document.getElementById("sms-copybtn-img");
+      const label = document.getElementById("sms-copylabel-img");
+      if (!smsSavedImages[1] && !smsSavedImages[2]) {
+        alert("등록된 명함 이미지가 없습니다.");
+        return;
+      }
+      try {
+        if (!smsMergedImageCanvas) await smsUpdateMergedPreview();
+        const pngBlob = await new Promise((resolve) => {
+          smsMergedImageCanvas.toBlob((b) => resolve(b), "image/png");
+        });
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
+        label.textContent = "✓ 복사 완료!";
+        btn.style.background = "#1a9e5f";
+        setTimeout(() => {
+          btn.style.background = "";
+          label.textContent = "② 명함 이미지 복사";
+        }, 2000);
+      } catch (e) {
+        alert("이미지 복사에 실패했습니다. 다시 시도해주세요.");
+      }
+    }
+
+    function smsInit() {
+      smsTemplates = smsLoadTemplates();
+      smsNextId = Math.max(...smsTemplates.map((t) => t.id)) + 1;
+      smsActiveId = smsTemplates[0].id;
+      smsSavedImages[1] = localStorage.getItem("cardImage1") || null;
+      smsSavedImages[2] = localStorage.getItem("cardImage2") || null;
+      if (smsSavedImages[1]) smsShowImagePreview(1, smsSavedImages[1]);
+      if (smsSavedImages[2]) smsShowImagePreview(2, smsSavedImages[2]);
+      smsRenderTabs();
+      smsUpdateFieldVisibility();
+      smsRender();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      onLoadInit();
+      smsInit();
+    });
+  </script>
+</body>
+</html>
