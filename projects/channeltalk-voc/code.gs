@@ -13,7 +13,7 @@ var CFG = {
   SHEET_JOB: '_job_candidates',
 
   CHANNEL_BASE: 'https://api.channel.io/open/v5',
-  DESK_BASE: 'https://desk.channel.io/bznavcare1/user-chats/',
+  DESK_BASE: 'https://desk.channel.io/YOUR_WORKSPACE/user-chats/',
   CHAT_STATES: ['closed', 'opened', 'snoozed', 'queued', 'initial', 'missed'],
 
   PAGE_LIMIT: 100,
