@@ -24,3 +24,4 @@ Google Apps Script (Web App) · Pipedrive API · Solapi API
 ## 보안
 - API 토큰: Script Properties (`PIPEDRIVE_TOKEN`)
 - 로그 출력 시 `api_token=***` 자동 마스킹
+- 저장소에는 고객 전화번호·딜 정보 등 원본 데이터 미포함
