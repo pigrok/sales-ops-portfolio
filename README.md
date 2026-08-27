@@ -28,10 +28,10 @@
 
 6개월 신청→결제 전수 **1,008건 / ₩216억** 분석. 담당자 개입이 D+3 결제율 **+7.2%p**, 성사율 **+4.0%p**, 추심 **−4.0%p**, 결제 경과일 **−1.1일** 개선 실증. → 콜 리소스 배분 정책의 실측 근거로 조직 채택.
 
-### 3. [Channel Talk VOC Collector](./projects/channeltalk-voc)
-**GAS + Open API · 단독**
+### 3. [Channel Talk VOC Dashboard](./projects/channeltalk-voc)
+**GAS + Open API + Chart.js · 단독**
 
-Channel Talk 대화 전문을 페이지네이션·Resume 기능으로 안정 수집. 이 도구를 기반으로 **해지요청 2,829건 전수 분석** → 클레임성 이탈 **29%** 규명, 담당자 80명별 클레임률 도출.
+채널톡 대화 데이터를 집계 단위로 수집·분류하고 태그·인입경로 등 문의 카테고리를 대시보드화. 이 도구를 기반으로 **해지요청 2,829건 전수 분석** → 클레임성 이탈 **29%** 규명, 담당자 80명별 클레임률 도출.
 
 ### 4. [n8n Self-hosted Workflows](./n8n-workflows)
 **n8n · self-hosted · 5개 프로젝트 · 9개 핵심 워크플로**
@@ -99,7 +99,7 @@ sales-ops-portfolio/
 ├── projects/
 │   ├── cs-operation-tool/           ← GAS + Whisper + LLM
 │   ├── refund-payment-funnel/       ← Python 분석
-│   ├── channeltalk-voc/             ← Channel Talk API 수집
+│   ├── channeltalk-voc/             ← Channel Talk VOC Dashboard
 │   ├── zapier-error-dashboard/      ← Zapier 오류 대시보드
 │   ├── care-unpaid-dashboard/       ← 미납 관리 (Chart.js + Slack)
 │   ├── alimtalk-template-manager/   ← Solapi + Claude 심사 사이클
