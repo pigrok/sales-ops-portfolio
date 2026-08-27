@@ -26,4 +26,4 @@ Google Apps Script (Web App) · LLM (Groq) · Pipedrive API · Solapi API · Sla
 ## 보안
 - 웹훅 인증: `_checkToken()` 사전 공유 토큰 검증
 - 로그 마스킹: `maskPhone()` 전화번호 자동 마스킹
-- API 키: Pipedrive 3계정 · Groq · Zapier CSRF 모두 Script Properties
+- API 키: Pipedrive · LLM · Zapier 관련 인증 정보 모두 Script Properties 관리
