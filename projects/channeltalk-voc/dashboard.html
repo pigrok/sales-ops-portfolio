@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>VOC 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', Roboto, sans-serif;
+      margin: 0; background: #f5f7fa; color: #1a202c;
+    }
+    .container { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+    header h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.3px; }
+    header p { color: #718096; margin: 0; font-size: 14px; }
+    .nav { display: flex; gap: 4px; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+    .nav button {
+      flex: 1; padding: 10px 16px; border: none; background: transparent;
+      border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+      color: #4a5568; font-family: inherit;
+    }
+    .nav button.active { background: #fff; color: #2d3748; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .card {
+      background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .card h2 { font-size: 16px; margin: 0 0 16px; color: #2d3748; }
+    .card h3 { font-size: 14px; margin: 0 0 12px; color: #2d3748; }
+    .card-sub { font-size: 12px; color: #a0aec0; font-weight: normal; margin-left: 8px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .status-tile { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; background: #fafbfc; }
+    .status-tile-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .status-tile-head .name { font-size: 16px; font-weight: 600; }
+    .status-tile-head .spacer { flex: 1; }
+    .status-tile-head button.mini-cancel {
+      background: transparent; color: #c53030; border: 1px solid #fed7d7;
+      padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer;
+      font-family: inherit; font-weight: 600;
+    }
+    .status-tile-head button.mini-cancel:hover { background: #fff5f5; border-color: #c53030; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .badge.idle { background: #edf2f7; color: #4a5568; }
+    .badge.running { background: #ebf8ff; color: #2c5282; }
+    .badge.preparing { background: #fefcbf; color: #744210; }
+    .badge.done { background: #f0fff4; color: #22543d; }
+    .badge.error { background: #fff5f5; color: #822727; }
+    .badge.cancelled { background: #f7fafc; color: #4a5568; }
+    .progress-wrap { background: #edf2f7; border-radius: 6px; height: 8px; overflow: hidden; margin: 8px 0; }
+    .progress-bar { background: linear-gradient(90deg, #4299e1, #3182ce); height: 100%; transition: width 0.4s; }
+    .progress-bar.done { background: linear-gradient(90deg, #48bb78, #38a169); }
+    .progress-bar.error { background: #c53030; }
+    .status-meta { font-size: 12px; color: #718096; margin: 4px 0; }
+    .status-nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+    .num-cell { background: #fff; border-radius: 4px; padding: 6px 4px; text-align: center; border: 1px solid #edf2f7; }
+    .num-cell .n { font-size: 15px; font-weight: 700; color: #2d3748; }
+    .num-cell .l { font-size: 10px; color: #718096; }
+    .skips { margin-top: 10px; font-size: 11px; color: #718096; line-height: 1.6; }
+    .skips .row { display: flex; justify-content: space-between; }
+    .skips .n { color: #4a5568; font-weight: 500; }
+    .status-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .channel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .channel-btn { padding: 16px; border: 2px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.15s; font-family: inherit; }
+    .channel-btn:hover:not(.disabled) { border-color: #4299e1; }
+    .channel-btn.selected { border-color: #3182ce; background: #ebf5ff; }
+    .channel-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+    .channel-btn .label { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .channel-btn .status-txt { font-size: 12px; color: #718096; }
+    .channel-btn .status-txt.warn { color: #d69e2e; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; color: #4a5568; margin-bottom: 6px; }
+    input[type="date"], select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; font-family: inherit; background: #fff; }
+    input:focus, select:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.15); }
+    button.primary { background: #3182ce; color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; font-family: inherit; }
+    button.primary:hover { background: #2b6cb0; }
+    button.primary:disabled { background: #a0aec0; cursor: not-allowed; }
+    button.secondary, button.link { background: #edf2f7; color: #2d3748; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 4px; }
+    button.link { background: #ebf8ff; color: #2c5282; }
+    button.link:hover { background: #bee3f8; }
+    button.secondary:hover { background: #e2e8f0; }
+    button.danger {
+      background: transparent; color: #c53030; border: 1px solid #fed7d7;
+      padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+      font-family: inherit;
+    }
+    button.danger:hover { background: #fff5f5; border-color: #c53030; }
+    .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+    .dash-header h2 { margin: 0; }
+    .dash-controls { display: flex; gap: 8px; align-items: center; }
+    .dash-controls select { width: auto; min-width: 140px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .kpi { background: #fff; border-radius: 12px; padding: 20px 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .kpi .num { font-size: 28px; font-weight: 700; color: #2d3748; letter-spacing: -0.5px; }
+    .kpi .lbl { font-size: 12px; color: #718096; margin-top: 4px; }
+    .kpi .sub { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+    .kpi.blue { background: #ebf8ff; } .kpi.blue .num { color: #2c5282; }
+    .kpi.green { background: #f0fff4; } .kpi.green .num { color: #22543d; }
+    .kpi.orange { background: #fffaf0; } .kpi.orange .num { color: #7b341e; }
+    .kpi.purple { background: #faf5ff; } .kpi.purple .num { color: #553c9a; }
+    .kpi.yellow { background: #fefcbf; } .kpi.yellow .num { color: #744210; }
+    .kpi.pink { background: #fff5f7; } .kpi.pink .num { color: #97266d; }
+    .chart-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-bottom: 20px; }
+    .chart-wrap { position: relative; height: 380px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table th, table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #edf2f7; }
+    table th { font-weight: 600; color: #4a5568; background: #f7fafc; font-size: 12px; }
+    table td.num, table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    table .rate.good { color: #22543d; font-weight: 600; }
+    table .rate.warn { color: #7b341e; font-weight: 600; }
+    .stars { color: #d69e2e; letter-spacing: 1px; }
+    .table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #2d3748; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; max-width: 400px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #c53030; }
+    .toast.success { background: #2f855a; }
+    .hidden { display: none !important; }
+    .footer-note { text-align: center; color: #a0aec0; font-size: 12px; margin-top: 32px; }
+    .live-dot { display: inline-block; width: 6px; height: 6px; background: #48bb78; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .empty { color: #a0aec0; text-align: center; padding: 40px 20px; font-size: 13px; }
+    .filter-tag { display: inline-block; padding: 3px 10px; background: #ebf8ff; color: #2c5282; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+    .filter-tag button { background: transparent; border: none; color: inherit; cursor: pointer; padding: 0 0 0 4px; font-size: 14px; }
+    @media (max-width: 780px) {
+      .kpi-grid, .status-grid { grid-template-columns: 1fr 1fr; }
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>VOC 대시보드</h1>
+        <p>환급 · 케어 채널톡 대화 통합 수집 · 분석</p>
+      </div>
+    </header>
+
+    <div class="nav">
+      <button id="navCollection" onclick="switchView('collection')">수집 실행</button>
+      <button id="navDashboard" onclick="switchView('dashboard')">대시보드</button>
+    </div>
+
+    <!-- 수집 실행 뷰 -->
+    <div id="viewCollection">
+      <div class="card">
+        <h2>채널 상태 <span class="card-sub"><span class="live-dot"></span>실시간 · 3초마다 갱신</span></h2>
+        <div class="status-grid" id="statusGrid">
+          <div class="empty">로딩 중...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>새 수집 실행</h2>
+        <div class="channel-grid" id="channelGrid">
+          <div class="empty">채널 로딩 중...</div>
+        </div>
+
+        <h2 style="margin-top:20px; font-size:14px;">기간 선택</h2>
+        <div class="form-row">
+          <div><label for="startDate">시작일</label><input type="date" id="startDate"></div>
+          <div><label for="endDate">종료일</label><input type="date" id="endDate"></div>
+        </div>
+
+        <button class="primary" id="runBtn" onclick="startCollection()">수집 시작</button>
+      </div>
+
+      <div class="card">
+        <h2>최근 수집 이력 <span class="card-sub">각 이력의 대시보드로 바로 이동</span></h2>
+        <div class="form-row" style="margin-bottom:12px;">
+          <div>
+            <label>채널</label>
+            <select id="histChannel" onchange="loadHistory()">
+              <option value="refund">환급</option>
+              <option value="care">케어</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <div id="historyBox"><div class="empty">이력 로딩 중...</div></div>
+      </div>
+    </div>
+
+    <!-- 대시보드 뷰 -->
+    <div id="viewDashboard" class="hidden">
+      <div class="card">
+        <div class="dash-header">
+          <h2 id="dashTitle">채널 분석</h2>
+          <div class="dash-controls">
+            <select id="dashChannel" onchange="onDashChannelChange()">
+              <option value="refund">환급</option>
+              <option value="care">케어</option>
+            </select>
+            <select id="dashSheet" onchange="loadDashboard()">
+              <option value="">전체 누적</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#a0aec0;" id="dashGeneratedAt"></div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi blue"><div class="num" id="kpiTotal">-</div><div class="lbl">총 대화</div></div>
+        <div class="kpi green"><div class="num" id="kpiTags">-</div><div class="lbl">누적 태그</div></div>
+        <div class="kpi orange"><div class="num" id="kpiInflow">-</div><div class="lbl">인입 경로 종류</div></div>
+        <div class="kpi purple"><div class="num" id="kpiManager">-</div><div class="lbl">담당자 수</div></div>
+      </div>
+
+      <div class="kpi-grid hidden" id="satisfactionKpis">
+        <div class="kpi pink">
+          <div class="num" id="kpiRespCount">-</div>
+          <div class="lbl">만족도 응답 수</div>
+          <div class="sub" id="kpiRespCountSub">범위 내 매칭</div>
+        </div>
+        <div class="kpi yellow">
+          <div class="num" id="kpiRespRate">-</div>
+          <div class="lbl">응답률</div>
+          <div class="sub" id="kpiRespRateSub">응답 / 대화</div>
+        </div>
+        <div class="kpi orange">
+          <div class="num" id="kpiAvgScore">-</div>
+          <div class="lbl">평균 점수</div>
+          <div class="sub" id="kpiAvgScoreSub">점수 조회 필요</div>
+        </div>
+        <div class="kpi blue">
+          <div class="num" id="kpiRespTotal">-</div>
+          <div class="lbl">누적 만족도 응답</div>
+          <div class="sub" id="kpiRespTotalSub">그룹 전체 스캔</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <h3>Top 15 태그 (문의 카테고리 분포)</h3>
+          <div class="chart-wrap"><canvas id="tagChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>인입 경로 분포</h3>
+          <div class="chart-wrap"><canvas id="inflowChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="satisfactionCard">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0; display:inline;">만족도 응답자</h3>
+            <span class="card-sub" id="satisfactionScopeLabel">해당 기간 매칭</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span id="satRefreshedAt" style="font-size:11px; color:#a0aec0;"></span>
+            <button class="secondary" onclick="scanTranscripts()" title="이미 수집된 전사문에 form 내용이 있는지 확인">🔍 전사문 스캔</button>
+            <button class="secondary" onclick="loadSatisfaction(true)">🔄 새로고침</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px; color:#4a5568; font-weight:600; margin-bottom:8px;">🎯 영향 요소 분포 (점수에 가장 큰 영향을 미친 요소)</div>
+          <div id="factorBox"><div class="empty" style="padding:20px;">점수 조회 후 표시됩니다</div></div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px; color:#4a5568; font-weight:600; margin-bottom:8px;">💬 기타 사유 (서술형)</div>
+          <div id="etcBox"><div class="empty" style="padding:20px;">점수 조회 후 표시됩니다</div></div>
+        </div>
+
+        <div class="table-wrap" id="respondentsBox">
+          <div class="empty">불러오는 중...</div>
+        </div>
+        <div id="respPagination" style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <p class="footer-note">시간 초과 시 1분 후 자동 이어서 수집 · 만족도 데이터는 신규 수집분부터 포함</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var SKIP_LABELS = {
+      autoClosed: '자동종료·상태변경',
+      outOfRange: '기간 외 메시지',
+      emptyText: '파일·이미지만',
+      fetchError: 'API 오류'
+    };
+    var COLORS = {
+      inflow: { '채널톡': '#4299e1', '카카오': '#f6ad55', '미트': '#48bb78', '미확인': '#a0aec0' }
+    };
+    var selectedChannel = null;
+    var pollTimer = null;
+    var spreadsheetUrl = '';
+    var tagChart = null;
+    var inflowChart = null;
+    var currentView = 'collection';
+    var channelSatisfactionMap = {}; // channel -> hasSatisfaction
+    var dashCache = {}; // 'ch|sheet' -> { data, satisfaction, ts, satTs }
+    var respondentsPage = 0;
+    var respondentsPerPage = 30;
+    var allRespondents = [];
+
+    function cacheKey() {
+      return document.getElementById('dashChannel').value + '|' + document.getElementById('dashSheet').value;
+    }
+    function cacheGet() { return dashCache[cacheKey()] || null; }
+    function cacheSet(patch) {
+      var key = cacheKey();
+      if (!dashCache[key]) dashCache[key] = {};
+      Object.keys(patch).forEach(function(k) { dashCache[key][k] = patch[k]; });
+    }
+    function fmtAgo(date) {
+      if (!date) return '';
+      var diffMs = new Date().getTime() - date.getTime();
+      var sec = Math.floor(diffMs / 1000);
+      if (sec < 60) return '방금 전';
+      if (sec < 3600) return Math.floor(sec / 60) + '분 전';
+      if (sec < 86400) return Math.floor(sec / 3600) + '시간 전';
+      return Math.floor(sec / 86400) + '일 전';
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      loadChannels();
+      startPolling();
+      fetchSpreadsheetUrl();
+      loadHistory();
+      restoreViewFromHash();
+      window.addEventListener('hashchange', restoreViewFromHash);
+    });
+
+    function restoreViewFromHash() {
+      var hRaw = String(location.hash || '').replace('#/', '');
+      var h = hRaw;
+      try { h = decodeURIComponent(hRaw); } catch (e) {}
+      if (h.indexOf('dashboard') === 0) {
+        var parts = h.split('/');
+        var ch = parts[1];
+        var sheet = parts.slice(2).join('/');
+        if (ch && document.getElementById('dashChannel').querySelector('option[value="' + ch + '"]')) {
+          document.getElementById('dashChannel').value = ch;
+        }
+        switchView('dashboard', true);
+        // 시트 목록 로드 후 (있으면) 선택 → 무조건 loadDashboard 호출
+        onDashChannelChange(function() {
+          if (sheet) {
+            var sel = document.getElementById('dashSheet');
+            var opt = sel.querySelector('option[value="' + sheet.replace(/"/g, '\\"') + '"]');
+            if (opt) sel.value = sheet;
+          }
+          loadDashboard();
+        });
+      } else {
+        switchView('collection', true);
+      }
+    }
+
+    function switchView(v, fromHash) {
+      currentView = v;
+      document.getElementById('viewCollection').classList.toggle('hidden', v !== 'collection');
+      document.getElementById('viewDashboard').classList.toggle('hidden', v !== 'dashboard');
+      document.getElementById('navCollection').classList.toggle('active', v === 'collection');
+      document.getElementById('navDashboard').classList.toggle('active', v === 'dashboard');
+      if (!fromHash) {
+        if (v === 'dashboard') {
+          var ch = document.getElementById('dashChannel').value;
+          var sheet = document.getElementById('dashSheet').value;
+          location.hash = '#/dashboard/' + ch + (sheet ? '/' + sheet : '');
+        } else {
+          location.hash = '#/';
+        }
+      }
+      if (v === 'dashboard' && !fromHash) onDashChannelChange();
+    }
+
+    function fetchSpreadsheetUrl() {
+      google.script.run.withSuccessHandler(function(url) { spreadsheetUrl = url || ''; }).api_getSpreadsheetUrl();
+    }
+
+    function loadChannels() {
+      google.script.run
+        .withSuccessHandler(renderChannels)
+        .withFailureHandler(function(err) { showToast('채널 로드 실패: ' + err.message, 'error'); })
+        .api_getChannels();
+    }
+
+    function renderChannels(channels) {
+      var grid = document.getElementById('channelGrid');
+      grid.innerHTML = '';
+      channels.forEach(function(ch) {
+        channelSatisfactionMap[ch.key] = !!ch.hasSatisfaction;
+        var btn = document.createElement('button');
+        btn.className = 'channel-btn' + (ch.hasApiKey ? '' : ' disabled');
+        btn.setAttribute('data-key', ch.key);
+        btn.innerHTML =
+          '<div class="label">' + ch.label + '</div>' +
+          '<div class="status-txt ' + (ch.hasApiKey ? '' : 'warn') + '">' +
+          (ch.hasApiKey ? 'API 키 설정됨 ✓' : 'API 키 미설정') + '</div>';
+        if (ch.hasApiKey) btn.onclick = function() { selectChannel(ch.key); };
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectChannel(key) {
+      selectedChannel = key;
+      document.querySelectorAll('.channel-btn').forEach(function(b) {
+        b.classList.toggle('selected', b.getAttribute('data-key') === key);
+      });
+    }
+
+    function toYmd(dateStr) { return String(dateStr || '').replace(/-/g, ''); }
+
+    function startCollection() {
+      if (!selectedChannel) { showToast('채널을 먼저 선택하세요.', 'error'); return; }
+      var startYmd = toYmd(document.getElementById('startDate').value);
+      var endYmd = toYmd(document.getElementById('endDate').value);
+      if (!startYmd || !endYmd) { showToast('시작일과 종료일을 선택하세요.', 'error'); return; }
+
+      var btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      btn.textContent = '수집 시작 중... (백그라운드 실행)';
+      showToast('수집 요청 전송 중...', 'info');
+      startPolling(1500);
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = '수집 시작';
+          if (!res.ok) { showToast(res.error || '오류가 발생했습니다.', 'error'); return; }
+          if (res.done) {
+            showToast('수집 완료: ' + res.collected + '건', 'success');
+            loadHistory();
+          } else {
+            showToast('수집 진행 중: 총 ' + res.total + '건', 'success');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = '수집 시작';
+          showToast('오류: ' + err.message, 'error');
+        })
+        .api_startCollection({ channel: selectedChannel, startYmd: startYmd, endYmd: endYmd });
+    }
+
+    function startPolling(intervalMs) {
+      if (pollTimer) clearTimeout(pollTimer);
+      pollNow();
+      if (intervalMs) schedulePoll(intervalMs);
+    }
+
+    function pollNow() {
+      google.script.run
+        .withSuccessHandler(function(list) {
+          renderStatusTiles(list);
+          var anyRunning = list && list.some(function(c) { return c.running; });
+          schedulePoll(anyRunning ? 3000 : 8000);
+        })
+        .withFailureHandler(function() { schedulePoll(10000); })
+        .api_getAllChannelStatus();
+    }
+
+    function schedulePoll(ms) {
+      if (pollTimer) clearTimeout(pollTimer);
+      pollTimer = setTimeout(pollNow, ms);
+    }
+
+    function statusBadgeMeta(item) {
+      var st = item.state || {};
+      if (item.running) {
+        if (st.phase === 'preparing') return { cls: 'preparing', text: '준비중' };
+        return { cls: 'running', text: '진행중' };
+      }
+      var s = st.status;
+      if (s === '완료') return { cls: 'done', text: '완료' };
+      if (s === '오류') return { cls: 'error', text: '오류' };
+      if (s === '중지됨') return { cls: 'cancelled', text: '중지됨' };
+      if (s === '이어서 대기') return { cls: 'running', text: '이어서 대기' };
+      if (s === '준비중') return { cls: 'preparing', text: '준비중' };
+      if (!s) return { cls: 'idle', text: '대기' };
+      return { cls: 'idle', text: s };
+    }
+
+    function renderStatusTiles(list) {
+      var grid = document.getElementById('statusGrid');
+      if (!list || !list.length) { grid.innerHTML = '<div class="empty">채널 없음</div>'; return; }
+      grid.innerHTML = '';
+      list.forEach(function(item) {
+        var st = item.state || {};
+        var meta = statusBadgeMeta(item);
+
+        var candidates = st.total !== undefined && st.total !== null ? Number(st.total) : Number(st.candidates || 0);
+        var scanned = st.nextIdx !== undefined && st.nextIdx !== null ? Number(st.nextIdx) : Number(st.scanned || 0);
+        var collected = Number(st.collected || 0);
+        var failed = Number(st.failed || 0);
+        var skips = st.skips || { autoClosed: 0, outOfRange: 0, emptyText: 0, fetchError: 0 };
+
+        var pct = 0;
+        if (candidates > 0) { pct = Math.round(scanned / candidates * 100); if (pct > 100) pct = 100; }
+        if (st.status === '완료') pct = 100;
+        if (meta.cls === 'idle' || meta.cls === 'preparing') pct = 0;
+
+        var skipsTotal = (skips.autoClosed || 0) + (skips.outOfRange || 0) + (skips.emptyText || 0) + (skips.fetchError || 0);
+
+        var actions = '';
+        if (!item.running && st.outputSheet && st.status === '완료') {
+          actions =
+            '<button class="link" onclick="openSheet()">📄 시트 열기</button>' +
+            '<button class="link" onclick="goDashboardSheet(\'' + item.channel + '\', \'' + escapeAttr(st.outputSheet) + '\')">📊 이 수집 대시보드</button>';
+        }
+
+        var cancelBtn = '';
+        if (item.running || st.status === '이어서 대기') {
+          cancelBtn = '<button class="mini-cancel" onclick="cancelChannelJob(\'' + item.channel + '\', \'' + escapeAttr(item.channelLabel) + '\')">⏹ 중지</button>';
+        }
+
+        var pbc = 'progress-bar';
+        if (meta.cls === 'done') pbc += ' done';
+        if (meta.cls === 'error') pbc += ' error';
+
+        var html =
+          '<div class="status-tile">' +
+            '<div class="status-tile-head"><span class="name">' + (item.channelLabel || item.channel) + '</span><span class="badge ' + meta.cls + '">' + meta.text + '</span><span class="spacer"></span>' + cancelBtn + '</div>' +
+            (st.period ? '<div class="status-meta">기간: ' + st.period + '</div>' : '') +
+            (st.outputSheet && st.outputSheet !== '(준비중)' ? '<div class="status-meta">출력탭: ' + st.outputSheet + '</div>' : '') +
+            '<div class="progress-wrap"><div class="' + pbc + '" style="width:' + pct + '%"></div></div>' +
+            '<div class="status-meta">' + scanned + ' / ' + candidates + ' 처리 · ' + pct + '%</div>' +
+            '<div class="status-nums">' +
+              '<div class="num-cell"><div class="n">' + candidates + '</div><div class="l">후보</div></div>' +
+              '<div class="num-cell"><div class="n">' + scanned + '</div><div class="l">처리</div></div>' +
+              '<div class="num-cell"><div class="n">' + collected + '</div><div class="l">수집</div></div>' +
+              '<div class="num-cell"><div class="n">' + failed + '</div><div class="l">실패</div></div>' +
+            '</div>' +
+            (skipsTotal > 0 ?
+              '<div class="skips"><div style="font-weight:600; color:#4a5568; margin-bottom:4px;">스킵 사유 (' + skipsTotal + '건)</div>' +
+                '<div class="row"><span>' + SKIP_LABELS.autoClosed + '</span><span class="n">' + (skips.autoClosed || 0) + '</span></div>' +
+                '<div class="row"><span>' + SKIP_LABELS.outOfRange + '</span><span class="n">' + (skips.outOfRange || 0) + '</span></div>' +
+                '<div class="row"><span>' + SKIP_LABELS.emptyText + '</span><span class="n">' + (skips.emptyText || 0) + '</span></div>' +
+                '<div class="row"><span>' + SKIP_LABELS.fetchError + '</span><span class="n">' + (skips.fetchError || 0) + '</span></div>' +
+              '</div>' : '') +
+            (actions ? '<div class="status-actions">' + actions + '</div>' : '') +
+          '</div>';
+        grid.insertAdjacentHTML('beforeend', html);
+      });
+    }
+
+    function openSheet() {
+      if (!spreadsheetUrl) { showToast('시트 URL 로딩 중...', 'error'); return; }
+      window.open(spreadsheetUrl, '_blank');
+    }
+
+    function cancelChannelJob(channelKey, channelLabel) {
+      if (!confirm('"' + channelLabel + '" 채널의 진행 중인 수집을 중지할까요?\n\n중지해도 지금까지 수집된 데이터는 시트에 남아있습니다.')) return;
+      showToast('중지 요청 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function() {
+          showToast(channelLabel + ' 수집을 중지했습니다.', 'success');
+          startPolling(1500);
+        })
+        .withFailureHandler(function(err) { showToast('오류: ' + err.message, 'error'); })
+        .api_cancelJob(channelKey);
+    }
+
+    function goDashboardSheet(channelKey, sheetName) {
+      document.getElementById('dashChannel').value = channelKey;
+      onDashChannelChange(function() {
+        var sel = document.getElementById('dashSheet');
+        if (sel.querySelector('option[value="' + sheetName + '"]')) {
+          sel.value = sheetName;
+          location.hash = '#/dashboard/' + channelKey + '/' + sheetName;
+          switchView('dashboard', true);
+          loadDashboard();
+        } else {
+          switchView('dashboard');
+        }
+      });
+    }
+
+    /* ===== 최근 수집 이력 ===== */
+    function loadHistory() {
+      var ch = document.getElementById('histChannel').value;
+      google.script.run
+        .withSuccessHandler(renderHistoryList)
+        .withFailureHandler(function(err) { showToast('이력 로드 실패: ' + err.message, 'error'); })
+        .api_getChannelHistory(ch);
+    }
+
+    function renderHistoryList(history) {
+      var box = document.getElementById('historyBox');
+      if (!history || !history.length) { box.innerHTML = '<div class="empty">이력 없음</div>'; return; }
+      var channelKey = document.getElementById('histChannel').value;
+      var html =
+        '<div class="table-wrap"><table>' +
+          '<thead><tr>' +
+            '<th>완료 시각</th>' +
+            '<th>기간</th>' +
+            '<th class="num">후보</th>' +
+            '<th class="num">수집</th>' +
+            '<th class="num">실패</th>' +
+            '<th class="num">성공률</th>' +
+            '<th>상태</th>' +
+            '<th>대시보드</th>' +
+            '<th>삭제</th>' +
+          '</tr></thead><tbody>' +
+          history.map(function(h) {
+            var rateClass = h.successRate >= 99 ? 'good' : 'warn';
+            var dashBtn = h.sheetName
+              ? '<button class="link" onclick="goDashboardSheet(\'' + channelKey + '\', \'' + escapeAttr(h.sheetName) + '\')">📊 보기</button>'
+              : '<span style="color:#a0aec0;">-</span>';
+            var delBtn = '<button class="danger" onclick="deleteHistoryEntry(\'' + channelKey + '\', \'' +
+              escapeAttr(h.completedAt) + '\', \'' + escapeAttr(h.period) + '\', \'' + escapeAttr(h.sheetName || '') + '\')">🗑️</button>';
+            return '<tr>' +
+              '<td>' + h.completedAt + '</td>' +
+              '<td>' + h.period + '</td>' +
+              '<td class="num">' + fmt(h.candidates) + '</td>' +
+              '<td class="num">' + fmt(h.collected) + '</td>' +
+              '<td class="num">' + fmt(h.failed) + '</td>' +
+              '<td class="num rate ' + rateClass + '">' + h.successRate + '%</td>' +
+              '<td>' + h.status + '</td>' +
+              '<td>' + dashBtn + '</td>' +
+              '<td>' + delBtn + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      box.innerHTML = html;
+    }
+
+    function deleteHistoryEntry(channelKey, completedAt, period, sheetName) {
+      var msg = '📋 이력을 삭제하시겠습니까?\n\n' + period + ' (' + completedAt + ')';
+      if (!confirm(msg)) return;
+
+      var alsoDeleteSheet = false;
+      if (sheetName) {
+        alsoDeleteSheet = confirm(
+          '수집 시트도 함께 삭제할까요?\n\n' +
+          '"' + sheetName + '"\n\n' +
+          '확인 = 이력 + 시트 모두 삭제\n' +
+          '취소 = 이력만 삭제 (시트 유지)'
+        );
+      }
+
+      showToast('삭제 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { showToast(res.error || '삭제 실패', 'error'); return; }
+          showToast(res.sheetDeleted ? '이력 + 시트 삭제 완료' : '이력 삭제 완료', 'success');
+          loadHistory();
+        })
+        .withFailureHandler(function(err) { showToast('오류: ' + err.message, 'error'); })
+        .api_deleteHistoryEntry({
+          channel: channelKey,
+          completedAt: completedAt,
+          period: period,
+          deleteSheet: alsoDeleteSheet
+        });
+    }
+
+    /* ===== 대시보드 ===== */
+    function onDashChannelChange(cb) {
+      var ch = document.getElementById('dashChannel').value;
+      google.script.run
+        .withSuccessHandler(function(sheets) {
+          var sel = document.getElementById('dashSheet');
+          sel.innerHTML = '<option value="">전체 누적</option>';
+          sheets.forEach(function(s) {
+            sel.innerHTML += '<option value="' + escapeAttr(s.name) + '">' + s.period + ' (' + s.rows + '건)</option>';
+          });
+          if (cb) cb();
+          else loadDashboard();
+        })
+        .withFailureHandler(function(err) { showToast('시트 목록 로드 실패: ' + err.message, 'error'); })
+        .api_getChannelSheets(ch);
+    }
+
+    function loadDashboard(force) {
+      var ch = document.getElementById('dashChannel').value;
+      var sheet = document.getElementById('dashSheet').value;
+      var chLabel = ch === 'refund' ? '환급' : '케어';
+      document.getElementById('dashTitle').textContent = chLabel + ' - ' + (sheet ? sheet.replace(/_.*$/, '') : '전체 누적') + ' 분석';
+      if (!sheet) location.hash = '#/dashboard/' + ch;
+      else location.hash = '#/dashboard/' + ch + '/' + encodeURIComponent(sheet);
+
+      var cached = cacheGet();
+      if (!force && cached && cached.data) {
+        // 캐시 히트 → 재조회 안 하고 렌더
+        try { renderDashboard(cached.data); }
+        catch (e) { showToast('렌더 오류: ' + e.message, 'error'); }
+        // 만족도도 캐시에서 시도
+        if (channelSatisfactionMap[ch]) {
+          if (cached.satisfaction) renderSatisfactionFromData(cached.satisfaction, cached.satTs);
+          else loadSatisfaction(false);
+        }
+        return;
+      }
+
+      ['kpiTotal','kpiTags','kpiInflow','kpiManager'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.textContent = '...';
+      });
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          cacheSet({ data: data, ts: new Date() });
+          try { renderDashboard(data); }
+          catch (e) {
+            showToast('렌더 오류: ' + e.message, 'error');
+            ['kpiTotal','kpiTags','kpiInflow','kpiManager'].forEach(function(id) {
+              var el = document.getElementById(id); if (el) el.textContent = '-';
+            });
+          }
+        })
+        .withFailureHandler(function(err) {
+          showToast('대시보드 로드 실패: ' + err.message, 'error');
+          ['kpiTotal','kpiTags','kpiInflow','kpiManager'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.textContent = '-';
+          });
+        })
+        .api_getDashboardData(ch, sheet);
+    }
+
+    function renderDashboard(data) {
+      if (!data) { showToast('데이터 없음', 'error'); return; }
+      var k = data.kpi;
+      var ch = document.getElementById('dashChannel').value;
+      var hasSatisfaction = !!channelSatisfactionMap[ch];
+
+      document.getElementById('kpiTotal').textContent = fmt(k.totalChats);
+      document.getElementById('kpiTags').textContent = fmt(k.totalTags);
+      document.getElementById('kpiInflow').textContent = fmt(k.inflowKinds);
+      document.getElementById('kpiManager').textContent = fmt(k.managerCount);
+
+      // 만족도 UI 토글
+      document.getElementById('satisfactionKpis').classList.toggle('hidden', !hasSatisfaction);
+      document.getElementById('satisfactionCard').classList.toggle('hidden', !hasSatisfaction);
+
+      document.getElementById('dashGeneratedAt').textContent =
+        '생성: ' + data.generatedAt + ' · 수집시트 ' + k.outputSheetCount + '개' +
+        (data.sheetName ? ' · 필터: ' + data.sheetName : '');
+
+      renderTagChart(data.topTags);
+      renderInflowChart(data.inflowDistribution);
+
+      if (hasSatisfaction) {
+        loadSatisfaction();
+      }
+    }
+
+    function seedFake() {
+      var ch = document.getElementById('dashChannel').value;
+      if (!confirm('현재 매칭된 응답자 전원에게 캡처용 임시 점수/영향요소/기타사유를 삽입합니다. 계속?')) return;
+      showToast('샘플 삽입 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { showToast(res.error || '오류', 'error'); return; }
+          showToast(res.seeded + '건 삽입 · ' + res.alreadyExisted + '건 중복 스킵', 'success');
+          loadSatisfaction(true);
+        })
+        .withFailureHandler(function(err) { showToast('오류: ' + err.message, 'error'); })
+        .api_seedFakeSatisfactionData(ch);
+    }
+
+    function clearFake() {
+      if (!confirm('임시 삽입한 캡처용 데이터를 삭제합니다. 계속?')) return;
+      showToast('삭제 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          showToast(res.deleted + '건 삭제', 'success');
+          loadSatisfaction(true);
+        })
+        .api_clearFakeSatisfactionData();
+    }
+
+    function scanTranscripts() {
+      var ch = document.getElementById('dashChannel').value;
+      showToast('전사문 스캔 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { showToast(res.error || '오류', 'error'); return; }
+          var msg = res.note + '\n\n총 ' + res.stats.totalScanned + '건 스캔 · ' + res.stats.matched + '건 매칭';
+          if (res.stats.matched > 0 && res.samples && res.samples.length) {
+            msg += '\n\n샘플 미리보기 (' + res.samples.length + '건):\n';
+            res.samples.forEach(function(s, i) {
+              msg += '\n[' + (i + 1) + '] ' + s.name + ' - 점수:' + (s.parsed.score || 'N/A') + ', 요소:' + (s.parsed.factor || 'N/A');
+            });
+            msg += '\n\n이 데이터를 만족도_웹훅 시트에 임포트할까요?';
+            if (confirm(msg)) {
+              importScanned(ch);
+            }
+          } else {
+            alert(msg);
+          }
+        })
+        .withFailureHandler(function(err) { showToast('오류: ' + err.message, 'error'); })
+        .api_scanTranscriptsForSurvey(ch);
+    }
+
+    function importScanned(ch) {
+      showToast('임포트 중...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { showToast(res.error || '오류', 'error'); return; }
+          showToast(res.imported + '건 임포트 · ' + res.skipped + '건 스킵', 'success');
+          loadSatisfaction(true);
+        })
+        .withFailureHandler(function(err) { showToast('오류: ' + err.message, 'error'); })
+        .api_importSurveyFromTranscripts(ch);
+    }
+
+    function loadSatisfaction(force) {
+      var ch = document.getElementById('dashChannel').value;
+      var sheet = document.getElementById('dashSheet').value;
+      if (!channelSatisfactionMap[ch]) return;
+
+      var cached = cacheGet();
+      if (!force && cached && cached.satisfaction) {
+        renderSatisfactionFromData(cached.satisfaction, cached.satTs);
+        return;
+      }
+
+      ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+        document.getElementById(id).textContent = '...';
+      });
+      document.getElementById('respondentsBox').innerHTML = '<div class="empty">응답자 조회 중... (10~20초)</div>';
+      document.getElementById('respPagination').innerHTML = '';
+      document.getElementById('satRefreshedAt').textContent = '';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) {
+            ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+              document.getElementById(id).textContent = '-';
+            });
+            document.getElementById('kpiRespCountSub').textContent = res.error || '오류';
+            document.getElementById('respondentsBox').innerHTML = '<div class="empty">' + escapeHtml(res.error || '오류') + '</div>';
+            return;
+          }
+          var now = new Date();
+          cacheSet({ satisfaction: res, satTs: now });
+          renderSatisfactionFromData(res, now);
+        })
+        .withFailureHandler(function(err) {
+          ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+            document.getElementById(id).textContent = '-';
+          });
+          document.getElementById('respondentsBox').innerHTML = '<div class="empty">오류: ' + escapeHtml(err.message) + '</div>';
+        })
+        .api_getSatisfactionRespondents(ch, sheet);
+    }
+
+    function renderSatisfactionFromData(res, ts) {
+      var sheet = document.getElementById('dashSheet').value;
+      document.getElementById('kpiRespCount').textContent = fmt(res.matchedInSheets);
+      document.getElementById('kpiRespCountSub').textContent = sheet ? '이 시트 범위' : '전체 누적 범위';
+
+      document.getElementById('kpiRespRate').textContent = res.responseRate + '%';
+      document.getElementById('kpiRespRateSub').textContent = fmt(res.matchedInSheets) + ' / ' + fmt(res.totalChatsInScope) + ' 대화';
+
+      // 평균점수: 웹훅 저장 시트에서 병합 (아래 mergeStoredWebhookData 에서 처리)
+      document.getElementById('kpiAvgScore').textContent = '-';
+      document.getElementById('kpiAvgScoreSub').textContent = '웹훅 저장 데이터 조회 중';
+
+      document.getElementById('kpiRespTotal').textContent = fmt(res.totalRespondentsScanned);
+      document.getElementById('kpiRespTotalSub').textContent =
+        '최근 7일 ' + fmt(res.last7dCount) + ' · 30일 ' + fmt(res.last30dCount);
+
+      document.getElementById('satRefreshedAt').textContent = ts ? ('마지막 갱신: ' + fmtAgo(ts)) : '';
+      document.getElementById('satisfactionScopeLabel').textContent = '총 ' + fmt(res.matchedInSheets) + '명 매칭';
+
+      allRespondents = res.respondents || [];
+      respondentsPage = 0;
+      renderRespondentsPage();
+      // 웹훅 저장된 실제 답변 데이터 병합
+      mergeStoredWebhookData();
+    }
+
+    function renderRespondentsPage() {
+      var box = document.getElementById('respondentsBox');
+      var pag = document.getElementById('respPagination');
+      if (!allRespondents.length) {
+        box.innerHTML = '<div class="empty">이 범위에 만족도 응답한 사용자가 없거나 매칭 안 됨</div>';
+        pag.innerHTML = '';
+        return;
+      }
+
+      var totalPages = Math.max(1, Math.ceil(allRespondents.length / respondentsPerPage));
+      if (respondentsPage < 0) respondentsPage = 0;
+      if (respondentsPage >= totalPages) respondentsPage = totalPages - 1;
+
+      var start = respondentsPage * respondentsPerPage;
+      var end = Math.min(start + respondentsPerPage, allRespondents.length);
+      var pageItems = allRespondents.slice(start, end);
+
+      var html =
+        '<table>' +
+          '<thead><tr>' +
+            '<th style="width:30px;">#</th>' +
+            '<th>이름</th>' +
+            '<th>인입</th>' +
+            '<th class="num">점수</th>' +
+            '<th>영향 요소</th>' +
+            '<th>문의 태그</th>' +
+            '<th>응답 시각</th>' +
+            '<th>링크</th>' +
+          '</tr></thead><tbody>' +
+          pageItems.map(function(r, i) {
+            var effectiveScore = (r.actualScore !== undefined && r.actualScore !== null && r.actualScore !== '') ? r.actualScore : r.avgScore;
+            var effectiveFactor = r.actualFactor || r.factor;
+            var scoreCell = (effectiveScore !== undefined && effectiveScore !== null && effectiveScore !== '')
+              ? '<span>' + effectiveScore + '</span>'
+              : '<span style="color:#cbd5e0;">-</span>';
+            var factorCell = effectiveFactor ? escapeHtml(effectiveFactor) : '<span style="color:#cbd5e0;">-</span>';
+            return '<tr>' +
+              '<td style="color:#a0aec0;">' + (start + i + 1) + '</td>' +
+              '<td>' + escapeHtml(r.name) + '</td>' +
+              '<td>' + escapeHtml(r.inflow) + '</td>' +
+              '<td class="num">' + scoreCell + '</td>' +
+              '<td>' + factorCell + '</td>' +
+              '<td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeAttr(r.tags) + '">' + escapeHtml(r.tags) + '</td>' +
+              '<td>' + escapeHtml(r.respondedAt) + '</td>' +
+              '<td>' + (r.link ? '<a href="' + escapeAttr(r.link) + '" target="_blank" style="color:#3182ce;">열기 →</a>' : '-') + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      box.innerHTML = html;
+
+      // 페이지네이션 컨트롤
+      var pageBtns = [];
+      pageBtns.push('<button class="secondary" ' + (respondentsPage === 0 ? 'disabled' : '') + ' onclick="gotoRespPage(' + (respondentsPage - 1) + ')">‹ 이전</button>');
+      pageBtns.push('<span style="font-size:12px; color:#4a5568; padding: 0 8px;">' + (respondentsPage + 1) + ' / ' + totalPages + ' (총 ' + fmt(allRespondents.length) + '명)</span>');
+      pageBtns.push('<button class="secondary" ' + (respondentsPage >= totalPages - 1 ? 'disabled' : '') + ' onclick="gotoRespPage(' + (respondentsPage + 1) + ')">다음 ›</button>');
+      pag.innerHTML = pageBtns.join('');
+    }
+
+    function gotoRespPage(n) {
+      respondentsPage = n;
+      renderRespondentsPage();
+    }
+
+    function loadScores(force) {
+      var ch = document.getElementById('dashChannel').value;
+      var cached = cacheGet();
+      if (!allRespondents.length) return;
+
+      if (!force && cached && cached.scoresMap) {
+        applyScoresToRespondents(cached.scoresMap, cached.scoresDiag);
+        return;
+      }
+
+      var chatIds = allRespondents.map(function(r) { return r.chatId; });
+      document.getElementById('kpiAvgScore').textContent = '...';
+      document.getElementById('kpiAvgScoreSub').textContent = chatIds.length + '건 조회 중 (30~120초)';
+      showToast('점수 조회 중 · ' + chatIds.length + '건 (백그라운드)', 'info');
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) {
+            document.getElementById('kpiAvgScore').textContent = '-';
+            document.getElementById('kpiAvgScoreSub').textContent = res.error || '오류';
+            return;
+          }
+          cacheSet({ scoresMap: res.scores, scoresDiag: res.diagnostics });
+          applyScoresToRespondents(res.scores, res.diagnostics);
+          showToast('점수 조회 완료 (' + res.elapsedSec + '초)', 'success');
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('kpiAvgScore').textContent = '-';
+          document.getElementById('kpiAvgScoreSub').textContent = err.message;
+        })
+        .api_getSatisfactionScores(ch, chatIds);
+    }
+
+    function mergeStoredWebhookData() {
+      // 웹훅 저장 시트에서 실제 답변 가져와 응답자 목록에 병합
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (!data || !data.sheetExists) return;
+          var applied = 0;
+          allRespondents.forEach(function(r) {
+            var stored = data.byChatId[r.chatId];
+            if (!stored) return;
+            r.actualScore = stored.score;
+            r.actualFactor = stored.factor;
+            r.actualEtc = stored.etc;
+            r.webhookReceivedAt = stored.receivedAt;
+            applied++;
+          });
+          computeAggregatesFromWebhook();
+          renderRespondentsPage();
+        })
+        .api_getStoredSatisfactionData();
+    }
+
+    function computeAggregatesFromWebhook() {
+      var totalScore = 0;
+      var scoreCount = 0;
+      var factorCounts = {};
+      var etcList = [];
+
+      allRespondents.forEach(function(r) {
+        var s = Number(r.actualScore);
+        if (!isNaN(s) && s > 0) { totalScore += s; scoreCount++; }
+        if (r.actualFactor) {
+          factorCounts[r.actualFactor] = (factorCounts[r.actualFactor] || 0) + 1;
+        }
+        if (r.actualEtc) {
+          etcList.push({
+            name: r.name, bizName: r.bizName, text: r.actualEtc,
+            score: r.actualScore, respondedAt: r.webhookReceivedAt || r.respondedAt, link: r.link
+          });
+        }
+      });
+
+      var avg = scoreCount > 0 ? (totalScore / scoreCount) : null;
+      document.getElementById('kpiAvgScore').textContent = avg !== null ? avg.toFixed(2) : '없음';
+      document.getElementById('kpiAvgScoreSub').textContent = scoreCount + ' / ' + allRespondents.length + ' 명 (웹훅 저장)';
+
+      renderFactorDistribution(factorCounts, scoreCount);
+      renderEtcList(etcList);
+    }
+
+    function applyScoresToRespondents(scoresMap, diagnostics) {
+      var totalScore = 0;
+      var scoreCountForAvg = 0;
+      var withAnswerCount = 0;
+      var factorCounts = {};
+      var etcList = [];
+
+      allRespondents.forEach(function(r) {
+        var sList = scoresMap[r.chatId];
+        r.avgScore = null;
+        r.factor = null;
+        r.etc = null;
+        r.scoreDetails = [];
+        if (Array.isArray(sList) && sList.length) {
+          // 첫 응답 사용 (한 조사방당 하나의 응답)
+          var a = sList[0];
+          r.scoreDetails = sList;
+          if (a.score !== null && a.score !== undefined) {
+            r.avgScore = a.score;
+            totalScore += a.score;
+            scoreCountForAvg++;
+          }
+          if (a.factor) {
+            r.factor = a.factor;
+            factorCounts[a.factor] = (factorCounts[a.factor] || 0) + 1;
+          }
+          if (a.etc) {
+            r.etc = a.etc;
+            etcList.push({
+              name: r.name,
+              bizName: r.bizName,
+              text: a.etc,
+              score: a.score,
+              respondedAt: r.respondedAt,
+              link: r.link
+            });
+          }
+          withAnswerCount++;
+        }
+      });
+
+      var avg = scoreCountForAvg > 0 ? (totalScore / scoreCountForAvg) : null;
+      document.getElementById('kpiAvgScore').textContent = avg !== null ? avg.toFixed(2) : '없음';
+      document.getElementById('kpiAvgScoreSub').textContent = scoreCountForAvg + ' / ' + allRespondents.length + ' 명 점수 추출';
+
+      renderFactorDistribution(factorCounts, withAnswerCount);
+      renderEtcList(etcList);
+      renderScoreDiagnostic(diagnostics, withAnswerCount);
+      renderRespondentsPage();
+    }
+
+    function renderFactorDistribution(counts, total) {
+      var box = document.getElementById('factorBox');
+      var keys = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a]; });
+      if (!keys.length) {
+        box.innerHTML = '<div class="empty" style="padding:20px;">영향 요소 데이터 없음</div>';
+        return;
+      }
+      var max = counts[keys[0]];
+      var html = '<div style="display:flex; flex-direction:column; gap:6px;">';
+      keys.forEach(function(k) {
+        var count = counts[k];
+        var pct = total > 0 ? Math.round(count / total * 100) : 0;
+        var barPct = max > 0 ? Math.round(count / max * 100) : 0;
+        html +=
+          '<div style="display:flex; align-items:center; gap:12px; font-size:13px;">' +
+            '<div style="flex:0 0 180px; color:#2d3748;">' + escapeHtml(k) + '</div>' +
+            '<div style="flex:1; background:#edf2f7; border-radius:4px; height:22px; position:relative; overflow:hidden;">' +
+              '<div style="background:linear-gradient(90deg, #4299e1, #3182ce); height:100%; width:' + barPct + '%; transition:width 0.4s;"></div>' +
+              '<div style="position:absolute; right:8px; top:2px; font-size:11px; color:#2d3748; font-weight:600;">' + count + '명 (' + pct + '%)</div>' +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    }
+
+    function renderEtcList(list) {
+      var box = document.getElementById('etcBox');
+      if (!list || !list.length) {
+        box.innerHTML = '<div class="empty" style="padding:20px;">기타 사유 응답 없음</div>';
+        return;
+      }
+      var html =
+        '<table style="font-size:12px;">' +
+          '<thead><tr>' +
+            '<th style="width:80px;">응답 시각</th>' +
+            '<th style="width:100px;">이름</th>' +
+            '<th style="width:60px;">점수</th>' +
+            '<th>사유</th>' +
+            '<th style="width:60px;">링크</th>' +
+          '</tr></thead><tbody>' +
+          list.map(function(e) {
+            return '<tr>' +
+              '<td>' + escapeHtml(e.respondedAt) + '</td>' +
+              '<td>' + escapeHtml(e.name) + '</td>' +
+              '<td class="num">' + (e.score !== null && e.score !== undefined ? e.score : '-') + '</td>' +
+              '<td>' + escapeHtml(e.text) + '</td>' +
+              '<td>' + (e.link ? '<a href="' + escapeAttr(e.link) + '" target="_blank" style="color:#3182ce;">열기 →</a>' : '-') + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      box.innerHTML = html;
+    }
+
+    function renderScoreDiagnostic(diagnostics, extractedCount) {
+      var box = document.getElementById('scoreDiagBox');
+      if (!diagnostics || Object.keys(diagnostics).length === 0) {
+        box.innerHTML = '';
+        return;
+      }
+      var out = [];
+      out.push('<div style="font-size:11px; color:#4a5568; margin-bottom:8px;"><b>추출 성공률:</b> ' + extractedCount + ' / ' + allRespondents.length + ' 명 · 아래 샘플에서 <b>봇 메시지</b>에 "상담 만족도 점수..." 패턴이 있는지 확인하세요.</div>');
+      out.push('<div style="font-size:11px; margin-bottom:8px;"><input type="text" id="diagCustomChat" placeholder="특정 chatId 입력해서 강제 진단" style="width:60%; padding:6px 10px; border:1px solid #cbd5e0; border-radius:4px; font-family:monospace;"> <button class="secondary" onclick="diagnoseCustomChat()">진단</button></div>');
+      out.push('<div id="customDiagOutput"></div>');
+      Object.keys(diagnostics).forEach(function(chatId, idx) {
+        var d = diagnostics[chatId];
+        out.push(renderChatDiag(d, chatId, idx + 1));
+      });
+      box.innerHTML = out.join('');
+    }
+
+    function renderChatDiag(d, chatId, idx) {
+      if (d.error) return '<div>[' + chatId + '] 오류: ' + escapeHtml(d.error) + '</div>';
+      var out = [];
+      out.push('<details style="margin-bottom:6px;" open><summary style="cursor:pointer; font-size:11px; font-weight:600;">샘플 ' + idx + ' (chatId: ' + chatId + ')</summary>');
+      out.push('<div style="padding:8px 12px; font-size:11px; background:#f7fafc; border-radius:4px; margin-top:4px;">');
+      out.push('<b>메시지 타입 분포:</b> ' + escapeHtml(JSON.stringify(d.typesCount || {})));
+      out.push('<br><b>survey 매칭 여부:</b> ' + (d.surveyFound || 0) + '건 매칭');
+      out.push('<br><b>사용자 메시지 (' + (d.userTexts || []).length + '건):</b>');
+      (d.userTexts || []).forEach(function(t) { out.push('<br>&nbsp;&nbsp;• ' + escapeHtml(t)); });
+      out.push('<br><br><b>봇/매니저 메시지 (' + (d.botTexts || []).length + '건):</b>');
+      (d.botTexts || []).forEach(function(t) { out.push('<br>&nbsp;&nbsp;• ' + escapeHtml(t)); });
+      if (d.blockSamples && d.blockSamples.length) {
+        out.push('<br><br><b>블록 (choice/form/review):</b>');
+        d.blockSamples.forEach(function(bs) {
+          out.push('<br>&nbsp;&nbsp;' + escapeHtml(bs.type) + ': ' + escapeHtml(JSON.stringify(bs.block).slice(0, 300)));
+        });
+      }
+      out.push('</div></details>');
+      return out.join('');
+    }
+
+    function diagnoseCustomChat() {
+      var chatId = document.getElementById('diagCustomChat').value.trim();
+      if (!chatId) { showToast('chatId 입력', 'error'); return; }
+      var ch = document.getElementById('dashChannel').value;
+      var out = document.getElementById('customDiagOutput');
+      out.innerHTML = '<div style="font-size:11px;">form 저장 위치 탐색 중... (엔드포인트 12개 + 메시지 500건 스캔, 30~60초)</div>';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { out.innerHTML = '<div style="color:#c53030; font-size:11px;">' + escapeHtml(res.error) + '</div>'; return; }
+          var html = [];
+          html.push('<div style="padding:12px; background:#f7fafc; border-radius:6px; font-size:11px;">');
+          html.push('<b>chatId:</b> ' + escapeHtml(res.chatId));
+          html.push('<br><b>스캔된 메시지:</b> ' + res.fullMessagesScanned + '건');
+          html.push('<br><b>결론:</b> ' + escapeHtml(res.note));
+
+          if (res.surveyFormFoundInMessages) {
+            var f = res.surveyFormFoundInMessages;
+            html.push('<br><br><b>✅ 메시지에서 survey form 텍스트 발견!</b>');
+            html.push('<br>&nbsp;&nbsp;페이지: ' + f.page + ' · personType: ' + escapeHtml(f.personType));
+            html.push('<br>&nbsp;&nbsp;plainText:<br><pre style="white-space:pre-wrap; background:#fff; padding:8px; margin:4px 0;">' + escapeHtml(f.plainText) + '</pre>');
+          }
+
+          if (res.logAnalysis) {
+            var la = res.logAnalysis;
+            html.push('<br><br><b>━━ log 필드 분석 ━━</b>');
+            html.push('<br>log 있는 메시지: ' + la.messagesWithLog + '건');
+            html.push('<br>발견된 log.action 종류:');
+            Object.keys(la.actionsFound || {}).forEach(function(action) {
+              var info = la.actionsFound[action];
+              html.push('<br>&nbsp;&nbsp;• <b>' + escapeHtml(action) + '</b> (' + info.count + '건)');
+              (info.samples || []).forEach(function(s) {
+                html.push('<br>&nbsp;&nbsp;&nbsp;&nbsp;<code style="font-size:10px;">' + escapeHtml(JSON.stringify(s.log)) + '</code>');
+              });
+            });
+
+            if (la.workflow820003Messages && la.workflow820003Messages.length) {
+              html.push('<br><br><b>🎯 workflow-820003 관련 메시지 (' + la.workflow820003Messages.length + '건):</b>');
+              la.workflow820003Messages.forEach(function(w, i) {
+                html.push('<br><br>[' + (i + 1) + '] messageId: ' + w.messageId + ', personType: ' + escapeHtml(w.personType));
+                html.push('<br>options: ' + escapeHtml(JSON.stringify(w.options)));
+                html.push('<br>allKeys: ' + (w.allKeys || []).join(', '));
+                html.push('<br>log:<pre style="white-space:pre-wrap; background:#fff; padding:8px; margin:4px 0; font-size:11px;">' + escapeHtml(JSON.stringify(w.log, null, 2)) + '</pre>');
+                if (w.plainText) html.push('plainText: ' + escapeHtml(w.plainText));
+                if (w.blocks && w.blocks.length) html.push('<br>blocks:<pre style="white-space:pre-wrap; background:#fff; padding:8px; margin:4px 0; font-size:11px;">' + escapeHtml(JSON.stringify(w.blocks, null, 2)) + '</pre>');
+              });
+            }
+          }
+
+          html.push('<br><br><b>━━ 엔드포인트 시도 결과 ━━</b>');
+          Object.keys(res.endpoints || {}).forEach(function(ep) {
+            var r = res.endpoints[ep];
+            if (r.ok) {
+              html.push('<br>✅ ' + escapeHtml(ep));
+              html.push('<br>&nbsp;&nbsp;keys: ' + (r.topKeys || []).join(', '));
+              html.push('<br>&nbsp;&nbsp;preview: <span style="color:#4a5568;">' + escapeHtml(r.preview) + '</span>');
+            } else {
+              html.push('<br>❌ ' + escapeHtml(ep) + '  → ' + escapeHtml(r.error));
+            }
+          });
+          html.push('</div>');
+          out.innerHTML = html.join('');
+        })
+        .withFailureHandler(function(err) { out.innerHTML = '<div style="color:#c53030;">' + escapeHtml(err.message) + '</div>'; })
+        .api_diagnoseFormSource(ch, chatId);
+    }
+
+    function fmt(n) { return Number(n || 0).toLocaleString(); }
+
+    function renderTagChart(tags) {
+      var ctx = document.getElementById('tagChart').getContext('2d');
+      if (tagChart) tagChart.destroy();
+      if (!tags || !tags.length) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = '13px sans-serif'; ctx.fillStyle = '#a0aec0';
+        ctx.fillText('태그 데이터 없음', 20, 30);
+        return;
+      }
+      tagChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: tags.map(function(t) { return t.name; }),
+          datasets: [{ label: '대화 수', data: tags.map(function(t) { return t.count; }), backgroundColor: '#4299e1', borderRadius: 4 }]
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, ticks: { font: { size: 11 } } }, y: { ticks: { font: { size: 11 } } } }
+        }
+      });
+    }
+
+    function renderInflowChart(inflows) {
+      var ctx = document.getElementById('inflowChart').getContext('2d');
+      if (inflowChart) inflowChart.destroy();
+      if (!inflows || !inflows.length) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = '13px sans-serif'; ctx.fillStyle = '#a0aec0';
+        ctx.fillText('인입경로 데이터 없음', 20, 30);
+        return;
+      }
+      var colors = inflows.map(function(i) { return COLORS.inflow[i.name] || '#cbd5e0'; });
+      inflowChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: inflows.map(function(i) { return i.name; }), datasets: [{ data: inflows.map(function(i) { return i.count; }), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                  var pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
+                  return ctx.label + ': ' + fmt(ctx.parsed) + ' (' + pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderRespondents(list) {
+      var box = document.getElementById('respondentsBox');
+      if (!list || !list.length) {
+        box.innerHTML = '<div class="empty">응답 데이터 없음 (기존 수집은 만족도 미포함 · 재수집 필요)</div>';
+        return;
+      }
+      var html =
+        '<table>' +
+          '<thead><tr>' +
+            '<th>이름</th>' +
+            '<th>사업장</th>' +
+            '<th>담당자</th>' +
+            '<th>인입</th>' +
+            '<th>만족도</th>' +
+            '<th>문의 태그</th>' +
+            '<th>채팅 시작</th>' +
+            '<th>링크</th>' +
+          '</tr></thead><tbody>' +
+          list.map(function(r) {
+            var stars = '';
+            for (var i = 0; i < 5; i++) stars += i < Math.round(r.rating) ? '★' : '☆';
+            return '<tr>' +
+              '<td>' + escapeHtml(r.name) + '</td>' +
+              '<td>' + escapeHtml(r.bizName) + '</td>' +
+              '<td>' + escapeHtml(r.manager) + '</td>' +
+              '<td>' + escapeHtml(r.inflow) + '</td>' +
+              '<td><span class="stars" title="' + r.rating + '점">' + stars + '</span> ' + r.rating + '</td>' +
+              '<td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeAttr(r.tags) + '">' + escapeHtml(r.tags) + '</td>' +
+              '<td>' + escapeHtml(r.startTime) + '</td>' +
+              '<td>' + (r.link ? '<a href="' + escapeAttr(r.link) + '" target="_blank" style="color:#3182ce;">열기 →</a>' : '-') + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      box.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, function(c) {
+        return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+      });
+    }
+    function escapeAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
+
+    function diagnoseGroup() {
+      var ch = document.getElementById('dashChannel').value;
+      var gid = document.getElementById('diagGroupId').value.trim();
+      var box = document.getElementById('diagnoseBox');
+      if (!gid) { showToast('그룹 ID 를 입력하세요', 'error'); return; }
+      box.classList.remove('hidden');
+      box.innerHTML = '그룹 API 엔드포인트 5개 시도 중... (5~10초)';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { box.innerHTML = '<span style="color:#c53030;">' + escapeHtml(res.error) + '</span>'; return; }
+          var out = [];
+          out.push('<b>채널:</b> ' + escapeHtml(res.channel));
+          out.push('<b>그룹 식별자:</b> ' + escapeHtml(res.groupIdentifier));
+          out.push('<b>안내:</b> ' + escapeHtml(res.note));
+          out.push('');
+          out.push('━━━ 엔드포인트 시도 결과 ━━━');
+          Object.keys(res.endpoints || {}).forEach(function(path) {
+            var r = res.endpoints[path];
+            if (r.ok) {
+              out.push('✅ ' + path);
+              out.push('  topKeys: ' + (r.topKeys || []).join(', '));
+              out.push('  preview: ' + escapeHtml(r.preview));
+            } else {
+              out.push('❌ ' + path + '  → ' + escapeHtml(r.error));
+            }
+            out.push('');
+          });
+          if (res.extractedChatIds && res.extractedChatIds.length) {
+            out.push('━━━ 추출된 chatId 후보 ━━━');
+            res.extractedChatIds.forEach(function(e) {
+              out.push('from ' + e.from + ':');
+              out.push('  ' + e.ids.join('\n  '));
+            });
+          }
+          box.innerHTML = '<pre style="margin:0; white-space:pre-wrap;">' + out.join('\n') + '</pre>';
+        })
+        .withFailureHandler(function(err) { box.innerHTML = '<span style="color:#c53030;">오류: ' + escapeHtml(err.message) + '</span>'; })
+        .api_diagnoseGroup(ch, gid);
+    }
+
+    function diagnoseRating() {
+      var ch = document.getElementById('dashChannel').value;
+      var specificChatId = document.getElementById('diagChatId').value.trim();
+      var box = document.getElementById('diagnoseBox');
+      box.classList.remove('hidden');
+      box.innerHTML = '진단 중... (엔드포인트 3개 + 메시지 조회, 10~20초 소요)';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.ok) { box.innerHTML = '<span style="color:#c53030;">' + escapeHtml(res.error) + '</span>'; return; }
+          var out = [];
+          if (res.sheetName) out.push('<b>시트:</b> ' + escapeHtml(res.sheetName));
+          if (res.specificChatId) out.push('<b>지정 chatId:</b> ' + escapeHtml(res.specificChatId));
+          out.push('<b>안내:</b> ' + escapeHtml(res.note));
+          out.push('');
+          res.samples.forEach(function(s, i) {
+            out.push('━━━ 샘플 ' + (i + 1) + ' (chatId: ' + s.chatId + ') ━━━');
+
+            out.push('▶ /user-chats/{id} 응답의 리뷰 후보 필드:');
+            out.push('  ' + JSON.stringify(s.reviewLikeFields || {}, null, 2).replace(/\n/g, '\n  '));
+
+            out.push('▶ 별도 리뷰 엔드포인트 시도:');
+            Object.keys(s.endpoints || {}).forEach(function(ep) {
+              var r = s.endpoints[ep];
+              if (r.ok) {
+                out.push('  ✅ ' + ep);
+                out.push('    keys: ' + (r.keys || []).join(', '));
+                out.push('    sample: ' + JSON.stringify(r.sample, null, 2).replace(/\n/g, '\n    ').slice(0, 800));
+              } else {
+                out.push('  ❌ ' + ep + '  → ' + r.error);
+              }
+            });
+
+            out.push('▶ 메시지 타입 분포 (최근 100건):');
+            out.push('  ' + JSON.stringify(s.messageTypes || {}));
+
+            if (s.reviewMessageSamples && s.reviewMessageSamples.length) {
+              out.push('▶ 리뷰로 보이는 메시지 (' + s.reviewMessageSamples.length + '건):');
+              s.reviewMessageSamples.forEach(function(m, j) {
+                out.push('  [' + (j + 1) + '] type=' + m.type + ', personType=' + m.personType);
+                out.push('    plainText: ' + escapeHtml(m.plainText));
+                out.push('    keys: ' + (m.keys || []).join(', '));
+                out.push('    blocks: ' + JSON.stringify(m.blocks, null, 2).replace(/\n/g, '\n    ').slice(0, 500));
+              });
+            } else {
+              out.push('▶ 리뷰로 보이는 메시지: 없음');
+            }
+
+            out.push('');
+          });
+          box.innerHTML = '<pre style="margin:0; white-space:pre-wrap;">' + out.join('\n') + '</pre>';
+        })
+        .withFailureHandler(function(err) { box.innerHTML = '<span style="color:#c53030;">오류: ' + escapeHtml(err.message) + '</span>'; })
+        .api_diagnoseRating(ch, specificChatId);
+    }
+
+    function showToast(msg, type) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show ' + (type || '');
+      setTimeout(function() { t.className = 'toast'; }, 3500);
+    }
+  </script>
+</body>
+</html>
