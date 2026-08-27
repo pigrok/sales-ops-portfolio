@@ -1,6 +1,6 @@
 # CS Operation Tool
 
-콜 후처리를 자동화하는 사내 GAS 웹 앱. 통화 녹취를 Whisper로 전사하고, LLM으로 화자를 분리한 뒤, Pipedrive Activity API로 자동 등록합니다.
+콜 후처리를 자동화하는 사내 GAS 웹 앱. 통화 녹취를 Whisper로 전사하고 LLM으로 화자를 분리한 뒤, 내부 권한 사용자에 한해 CRM 활동 기록으로 등록되도록 설계했습니다.
 
 ![CS Operation Tool 화면](../../assets/screenshots/cs-operation-tool.png)
 

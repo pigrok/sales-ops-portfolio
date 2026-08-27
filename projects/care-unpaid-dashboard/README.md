@@ -27,7 +27,7 @@ Google Apps Script · Google Sheets · Chart.js (Web App) · Slack Webhook · Ti
 - `appsscript.json` — 매니페스트 (파일 없음, 시트 프로젝트에서 직접 배포)
 
 ## 보안 (ISMS 준수)
-원본 코드에는 사업자번호 5건과 담당자 실명이 하드코딩되어 있었습니다. 저장소에는 마스킹된 버전만 포함:
+원본 코드에 포함될 수 있는 사업자번호·담당자명 등 식별 정보는 저장소 버전에서 모두 마스킹했습니다:
 - `EXCLUDE_BIZ_NO`: 예시 주석으로 대체
 - `EXCLUDED_MANAGERS`: `EXCLUDED_MANAGER_A`·`EXCLUDED_MANAGER_B`
 - `DASHBOARD_URL`: Script Properties로 이동

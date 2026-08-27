@@ -29,7 +29,10 @@ Google Apps Script (Web App) · Channel Talk Open API · Google Sheets · Chart.
 - `appsscript.json` — 매니페스트
 
 ## 보안 (ISMS 준수)
-- Access Key/Secret: Script Properties 관리
+
+저장소에는 **원문 대화, 고객 식별정보, 워크스페이스 식별자, 인증 정보가 포함되어 있지 않으며**, README에는 집계 결과와 구현 구조만 요약했습니다.
+
+- Access Key/Secret: Script Properties 관리 (저장소 미포함)
 - 채널 slug·그룹 ID 등 워크스페이스 식별자: 저장소 버전에서 마스킹 (`<REFUND_SLUG>` · `<CARE_SLUG>` · `<SATISFACTION_GROUP_ID>`)
-- 원본 대화의 개인정보는 팀 내부 시트에만 저장, 저장소에는 포함하지 않음
+- 원문 대화 및 개인정보는 저장소에 포함하지 않고, 분석 결과는 집계 지표 중심으로 표시
 - 대시보드는 집계 지표(태그 분포·인입경로·응답 규모)만 표시하도록 설계
