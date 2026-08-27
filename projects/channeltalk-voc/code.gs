@@ -422,6 +422,145 @@ function api_importSurveyFromTranscripts(channelKey) {
 }
 
 /**
+ * 특정 chatId 의 모든 메시지 raw dump - form 메시지 실제 저장 위치 찾기용
+ */
+function api_dumpAllMessages(channelKey, chatId) {
+  var ch = CHANNELS[channelKey];
+  if (!ch) return { ok: false, error: '알 수 없는 채널' };
+  var keys = getApiKeys(channelKey);
+  if (!keys) return { ok: false, error: 'API 키 없음' };
+  if (!chatId) return { ok: false, error: 'chatId 필요' };
+
+  var headers = buildHeaders(keys.key, keys.secret);
+  var allMessages = [];
+  var since = '';
+  for (var p = 0; p < 5; p++) {
+    var params = { limit: 100, sortOrder: 'desc' };
+    if (since) params.since = since;
+    try {
+      var data = ctGet('/user-chats/' + chatId + '/messages', params, headers);
+      var msgs = data.messages || [];
+      msgs.forEach(function(m) {
+        allMessages.push({
+          id: m.id,
+          personType: m.personType,
+          personId: m.personId,
+          type: m.type,
+          plainText: m.plainText || '',
+          blocks: m.blocks || [],
+          log: m.log || null,
+          options: m.options || [],
+          createdAt: m.createdAt,
+          allKeys: Object.keys(m)
+        });
+      });
+      if (!data.next) break;
+      since = data.next;
+    } catch (e) { break; }
+  }
+
+  // form 관련 후보 필터
+  var candidates = allMessages.filter(function(m) {
+    var t = (m.plainText || '') + JSON.stringify(m.blocks || []);
+    return /만족도|점수|영향|기타|form|저장됨/i.test(t) ||
+           (m.log && /form|answer|submit/i.test(String(m.log.action || '')));
+  });
+
+  return {
+    ok: true,
+    chatId: chatId,
+    totalMessages: allMessages.length,
+    formCandidates: candidates.length,
+    candidates: candidates.slice(0, 10),
+    allMessagesBrief: allMessages.map(function(m) {
+      return {
+        id: m.id,
+        personType: m.personType,
+        type: m.type,
+        hasPlainText: !!m.plainText,
+        plainTextPreview: (m.plainText || '').slice(0, 80),
+        blockCount: (m.blocks || []).length,
+        blockTypes: (m.blocks || []).map(function(b) { return b.type; }),
+        hasLog: !!m.log,
+        logAction: m.log ? m.log.action : null,
+        options: m.options
+      };
+    })
+  };
+}
+
+/**
+ * 특정 chatId 진단 실행 (Apps Script 편집기에서 직접 실행)
+ * 결과는 로그 + '_debug_dump' 시트에 저장
+ */
+function runDumpKangMinKyung() {
+  var chatId = '6a8d7e42f2f275548a4a'; // 강민경 chat
+  var res = api_dumpAllMessages('refund', chatId);
+
+  Logger.log('==============================');
+  Logger.log('chatId: ' + res.chatId);
+  Logger.log('총 메시지: ' + res.totalMessages);
+  Logger.log('form 후보 (만족도 관련 키워드 포함): ' + res.formCandidates);
+  Logger.log('==============================');
+
+  (res.candidates || []).forEach(function(c, i) {
+    Logger.log('----- 후보 #' + (i + 1) + ' -----');
+    Logger.log('id=' + c.id + ', personType=' + c.personType + ', type=' + c.type);
+    Logger.log('plainText: ' + String(c.plainText || '(empty)').slice(0, 300));
+    Logger.log('blocks (' + (c.blocks || []).length + '개): ' + JSON.stringify(c.blocks).slice(0, 800));
+    Logger.log('log: ' + JSON.stringify(c.log));
+    Logger.log('options: ' + JSON.stringify(c.options));
+    Logger.log('allKeys: ' + (c.allKeys || []).join(','));
+  });
+
+  Logger.log('==============================');
+  Logger.log('전체 메시지 요약:');
+  (res.allMessagesBrief || []).forEach(function(m, i) {
+    Logger.log('[' + (i + 1) + '] type=' + m.type + ' pType=' + m.personType +
+      ' text="' + (m.plainTextPreview || '') + '"' +
+      ' blocks=' + (m.blockCount || 0) +
+      ' blockTypes=' + JSON.stringify(m.blockTypes) +
+      ' logAction=' + (m.logAction || '-') +
+      ' options=' + JSON.stringify(m.options));
+  });
+
+  // 시트에도 저장 (시각적으로 확인 가능)
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('_debug_dump') || ss.insertSheet('_debug_dump');
+  sh.clearContents();
+
+  var candidatesById = {};
+  (res.candidates || []).forEach(function(c) { candidatesById[c.id] = c; });
+
+  var rows = [
+    ['chatId', res.chatId, '', '', '', '', '', '', '', '', ''],
+    ['총 메시지', res.totalMessages, '', '', '', '', '', '', '', '', ''],
+    ['form 후보', res.formCandidates, '', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', ''],
+    ['idx', 'personType', 'type', 'plainText', 'blockCount', 'blockTypes', 'blocksJSON', 'logAction', 'logJSON', 'options', 'allKeys']
+  ];
+  (res.allMessagesBrief || []).forEach(function(m, i) {
+    var full = candidatesById[m.id] || {};
+    rows.push([
+      i + 1,
+      m.personType || '',
+      m.type || '',
+      m.plainTextPreview || '',
+      m.blockCount || 0,
+      JSON.stringify(m.blockTypes || []),
+      full.blocks ? JSON.stringify(full.blocks).slice(0, 5000) : '',
+      m.logAction || '',
+      full.log ? JSON.stringify(full.log) : '',
+      JSON.stringify(m.options || []),
+      full.allKeys ? full.allKeys.join(',') : ''
+    ]);
+  });
+  sh.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+  Logger.log('시트에도 저장됨: _debug_dump 탭에서 확인');
+  return res;
+}
+
+/**
  * 웹훅 URL 확인용 (배포 URL 반환)
  */
 function api_getWebhookInfo() {

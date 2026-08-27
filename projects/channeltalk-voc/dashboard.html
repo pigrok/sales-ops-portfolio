@@ -217,10 +217,10 @@
           <div class="lbl">응답률</div>
           <div class="sub" id="kpiRespRateSub">응답 / 대화</div>
         </div>
-        <div class="kpi orange">
-          <div class="num" id="kpiAvgScore">-</div>
-          <div class="lbl">평균 점수</div>
-          <div class="sub" id="kpiAvgScoreSub">점수 조회 필요</div>
+        <div class="kpi green">
+          <div class="num" id="kpiResp7d">-</div>
+          <div class="lbl">최근 7일 응답</div>
+          <div class="sub" id="kpiResp7dSub">전체 그룹 기준</div>
         </div>
         <div class="kpi blue">
           <div class="num" id="kpiRespTotal">-</div>
@@ -248,19 +248,8 @@
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
             <span id="satRefreshedAt" style="font-size:11px; color:#a0aec0;"></span>
-            <button class="secondary" onclick="scanTranscripts()" title="이미 수집된 전사문에 form 내용이 있는지 확인">🔍 전사문 스캔</button>
             <button class="secondary" onclick="loadSatisfaction(true)">🔄 새로고침</button>
           </div>
-        </div>
-
-        <div style="margin-bottom:20px;">
-          <div style="font-size:13px; color:#4a5568; font-weight:600; margin-bottom:8px;">🎯 영향 요소 분포 (점수에 가장 큰 영향을 미친 요소)</div>
-          <div id="factorBox"><div class="empty" style="padding:20px;">점수 조회 후 표시됩니다</div></div>
-        </div>
-
-        <div style="margin-bottom:20px;">
-          <div style="font-size:13px; color:#4a5568; font-weight:600; margin-bottom:8px;">💬 기타 사유 (서술형)</div>
-          <div id="etcBox"><div class="empty" style="padding:20px;">점수 조회 후 표시됩니다</div></div>
         </div>
 
         <div class="table-wrap" id="respondentsBox">
@@ -811,7 +800,7 @@
         return;
       }
 
-      ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+      ['kpiRespCount','kpiRespRate','kpiResp7d','kpiRespTotal'].forEach(function(id) {
         document.getElementById(id).textContent = '...';
       });
       document.getElementById('respondentsBox').innerHTML = '<div class="empty">응답자 조회 중... (10~20초)</div>';
@@ -821,7 +810,7 @@
       google.script.run
         .withSuccessHandler(function(res) {
           if (!res.ok) {
-            ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+            ['kpiRespCount','kpiRespRate','kpiResp7d','kpiRespTotal'].forEach(function(id) {
               document.getElementById(id).textContent = '-';
             });
             document.getElementById('kpiRespCountSub').textContent = res.error || '오류';
@@ -833,7 +822,7 @@
           renderSatisfactionFromData(res, now);
         })
         .withFailureHandler(function(err) {
-          ['kpiRespCount','kpiRespRate','kpiAvgScore','kpiRespTotal'].forEach(function(id) {
+          ['kpiRespCount','kpiRespRate','kpiResp7d','kpiRespTotal'].forEach(function(id) {
             document.getElementById(id).textContent = '-';
           });
           document.getElementById('respondentsBox').innerHTML = '<div class="empty">오류: ' + escapeHtml(err.message) + '</div>';
@@ -849,13 +838,12 @@
       document.getElementById('kpiRespRate').textContent = res.responseRate + '%';
       document.getElementById('kpiRespRateSub').textContent = fmt(res.matchedInSheets) + ' / ' + fmt(res.totalChatsInScope) + ' 대화';
 
-      // 평균점수: 웹훅 저장 시트에서 병합 (아래 mergeStoredWebhookData 에서 처리)
-      document.getElementById('kpiAvgScore').textContent = '-';
-      document.getElementById('kpiAvgScoreSub').textContent = '웹훅 저장 데이터 조회 중';
+      document.getElementById('kpiResp7d').textContent = fmt(res.last7dCount);
+      document.getElementById('kpiResp7dSub').textContent = '30일: ' + fmt(res.last30dCount) + '건';
 
       document.getElementById('kpiRespTotal').textContent = fmt(res.totalRespondentsScanned);
       document.getElementById('kpiRespTotalSub').textContent =
-        '최근 7일 ' + fmt(res.last7dCount) + ' · 30일 ' + fmt(res.last30dCount);
+        res.pagesScanned + '페이지 스캔' + (res.earliestAt ? ' · ' + res.earliestAt + '~' : '');
 
       document.getElementById('satRefreshedAt').textContent = ts ? ('마지막 갱신: ' + fmtAgo(ts)) : '';
       document.getElementById('satisfactionScopeLabel').textContent = '총 ' + fmt(res.matchedInSheets) + '명 매칭';
@@ -890,26 +878,16 @@
             '<th style="width:30px;">#</th>' +
             '<th>이름</th>' +
             '<th>인입</th>' +
-            '<th class="num">점수</th>' +
-            '<th>영향 요소</th>' +
             '<th>문의 태그</th>' +
             '<th>응답 시각</th>' +
             '<th>링크</th>' +
           '</tr></thead><tbody>' +
           pageItems.map(function(r, i) {
-            var effectiveScore = (r.actualScore !== undefined && r.actualScore !== null && r.actualScore !== '') ? r.actualScore : r.avgScore;
-            var effectiveFactor = r.actualFactor || r.factor;
-            var scoreCell = (effectiveScore !== undefined && effectiveScore !== null && effectiveScore !== '')
-              ? '<span>' + effectiveScore + '</span>'
-              : '<span style="color:#cbd5e0;">-</span>';
-            var factorCell = effectiveFactor ? escapeHtml(effectiveFactor) : '<span style="color:#cbd5e0;">-</span>';
             return '<tr>' +
               '<td style="color:#a0aec0;">' + (start + i + 1) + '</td>' +
               '<td>' + escapeHtml(r.name) + '</td>' +
               '<td>' + escapeHtml(r.inflow) + '</td>' +
-              '<td class="num">' + scoreCell + '</td>' +
-              '<td>' + factorCell + '</td>' +
-              '<td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeAttr(r.tags) + '">' + escapeHtml(r.tags) + '</td>' +
+              '<td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeAttr(r.tags) + '">' + escapeHtml(r.tags) + '</td>' +
               '<td>' + escapeHtml(r.respondedAt) + '</td>' +
               '<td>' + (r.link ? '<a href="' + escapeAttr(r.link) + '" target="_blank" style="color:#3182ce;">열기 →</a>' : '-') + '</td>' +
             '</tr>';
