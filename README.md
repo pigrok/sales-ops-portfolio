@@ -17,7 +17,7 @@
 
 ---
 
-## 대표 프로젝트 7개
+## 대표 프로젝트 6개
 
 ### 1. [CS Operation Tool](./projects/cs-operation-tool)
 **GAS + Whisper + LLM · 단독 개발**
@@ -25,10 +25,10 @@
 콜 후처리 시간을 줄이는 사내 도구. 통화 녹취 → 자동 전사 → 화자 분리 → CRM 활동 자동 등록.
 콜 1건당 사후 처리 **3분 30초 → 자동화**. 팀 배포 후 상시 사용 중.
 
-### 2. [Refund Payment Funnel Analysis (Python)](./projects/refund-payment-funnel)
-**Python + Pipedrive · 단독**
+### 2. [Refund Payment Funnel Analysis (Claude-assisted)](./projects/refund-payment-funnel)
+**Claude + Pipedrive · 단독**
 
-6개월 신청→결제 전수 **1,008건 / ₩216억** 분석. 담당자 개입이 D+3 결제율 **+7.2%p**, 성사율 **+4.0%p**, 추심 **−4.0%p**, 결제 경과일 **−1.1일** 개선 실증. → 콜 리소스 배분 정책의 실측 근거로 조직 채택.
+6개월 신청→결제 전수 **1,008건 / ₩216억** 을 Claude로 반복 대화 분석. 담당자 개입이 D+3 결제율 **+7.2%p**, 성사율 **+4.0%p**, 추심 **−4.0%p**, 결제 경과일 **−1.1일** 개선 실증. → 콜 리소스 배분 정책의 실측 근거로 조직 채택.
 
 ### 3. [CX 케어·환급 통합 대시보드](./projects/cx-integrated-dashboard)
 **GAS + Open API + Chart.js · 단독** · (구 Channel Talk VOC Dashboard 전면 개편)
@@ -36,9 +36,9 @@
 환급·케어 두 채널을 한 웹앱에서 수집·분석. 태그·인입경로·조직 성과(진입→종결 히트맵)·해지 태그 vs 실제 해지 매칭·ALF 인입·CSAT까지 통합. 월간 **환급 2,548 / 케어 3,781 대화** 처리 · 매니저-팀 매핑 **56명·11팀** UI 관리 · 자동 이어서 수집 + 스냅샷 시스템.
 
 ### 4. [n8n Self-hosted Workflows](./n8n-workflows)
-**n8n · self-hosted · 5개 프로젝트 · 9개 핵심 워크플로**
+**n8n · self-hosted**
 
-이탈 신호 자동 감지 파이프라인, Channel Talk → CRM Sync, AlimTalk Ops (Solapi + Claude로 초안 자동 생성) 등. 원본 JSON은 ISMS 준수를 위해 미포함, 아키텍처 다이어그램으로 대체.
+수임해제 Slack 노티 → Pipedrive 케어 딜 자동 생성, Channel Talk → Pipedrive 프로필 저장(파드 단계 포함), Solapi 알림톡 심사 상태 Slack 알림 등 실시간 이벤트 자동화 워크플로. 원본 JSON은 ISMS 준수를 위해 미포함, 아키텍처 다이어그램으로 대체.
 
 ### 5. [Zapier Error Dashboard](./projects/zapier-error-dashboard)
 **GAS + LLM + Chrome Extension · 단독**
@@ -50,19 +50,14 @@ Zap 98건 운영 중 오류 로그를 자동 수집 → LLM 유형 분류 → �
 
 주간 미납 CSV → 사업자번호 그룹화 → 월별 탭 자동 적재 → 강제해지 자동 감지 → Chart.js 대시보드 → 슬랙 주간 리포트. **7월 미납 회수율 86.23%** 달성의 데이터 인프라.
 
-### 7. [AlimTalk Template Manager](./projects/alimtalk-template-manager)
-**Solapi + Claude + n8n · 단독**
-
-카카오 알림톡 심사 사이클(초안 → 검수 요청 → 반려 → 재작성) 원스톱 웹 도구. LLM 초안 자동 생성, 카카오 미리보기 UI, 반려 분석 자동화.
-
 ---
 
 ## 관련 프로젝트
 
-### 8. [Pipedrive Filter Dashboard](./projects/pipedrive-filter-dashboard)
+### 7. [Pipedrive Filter Dashboard](./projects/pipedrive-filter-dashboard)
 Pipedrive 필터별 딜 현황 + Solapi 발송 상태 원클릭 재발송.
 
-### 9. [Refund KPI Calculator](./projects/apps-script-refund)
+### 8. [Refund KPI Calculator](./projects/apps-script-refund)
 대시보드 이미지 → Drive OCR로 KPI 자동 산출 · 슬랙 보고문 자동 생성 (참고용, 지원 문서에는 미포함).
 
 ---
@@ -80,7 +75,7 @@ Pipedrive 필터별 딜 현황 + Solapi 발송 상태 원클릭 재발송.
 - Slack Webhook · Solapi · Channel Talk (Open API · 웹훅)
 
 **Data / Analysis**
-- Python (Pandas · ReportLab) · SQL (Metabase) · Google Sheets
+- Claude 활용 대화형 분석 · SQL (Metabase) · Google Sheets
 
 **AI Integration**
 - Anthropic Claude · Whisper (STT) · LLM 화자 분리 · 오류 자동 분류
@@ -104,7 +99,6 @@ sales-ops-portfolio/
 │   ├── cx-integrated-dashboard/     ← CX 케어·환급 통합 대시보드 (구 Channel Talk VOC)
 │   ├── zapier-error-dashboard/      ← Zapier 오류 대시보드
 │   ├── care-unpaid-dashboard/       ← 미납 관리 (Chart.js + Slack)
-│   ├── alimtalk-template-manager/   ← Solapi + Claude 심사 사이클
 │   ├── pipedrive-filter-dashboard/
 │   └── apps-script-refund/          ← KPI 자동 계산 (참고용)
 ├── n8n-workflows/                   ← n8n 아키텍처 문서

@@ -18,15 +18,12 @@
 ## 대표 워크플로
 
 ### 1. Contract Termination Detection Pipeline
-국세청 시스템 수임해제 이벤트 → HMAC 검증 → 중복 제거 → 담당자 라운드로빈 배정 → Pipedrive 딜 생성 → 슬랙 알림.
+사내 제품에서 홈택스 수임해제 이벤트를 감지하면 지정된 Slack 채널로 노티가 발송되고, n8n이 그 Slack 노티를 수신 트리거로 받아 사업장 정보를 파싱 → 중복 딜 여부 확인 → Pipedrive 케어 구독 딜 자동 생성 → 담당자 후속 관리 대상으로 전환.
 
 ### 2. Channel Talk → CRM Sync
 채널톡 이벤트 → LLM 의도 분류 (예약/해지/일반) → Pipedrive Activity 또는 해지 파이프라인으로 분기.
 
-### 3. AlimTalk Template Ops
-Solapi 알림톡 템플릿 200+ 관리 + Anthropic Claude로 초안 자동 생성 + 반려 사유 파싱·자동 개정.
-
-### 4. HR Notification Automation
+### 3. HR Notification Automation
 Google Calendar 휴가 이벤트 → 최초 공지 + 전날 오전 10시 리마인더 자동 발송.
 
 ## 보안 설계 (공통)
