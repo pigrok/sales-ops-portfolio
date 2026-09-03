@@ -30,10 +30,10 @@
 
 6개월 신청→결제 전수 **1,008건 / ₩216억** 분석. 담당자 개입이 D+3 결제율 **+7.2%p**, 성사율 **+4.0%p**, 추심 **−4.0%p**, 결제 경과일 **−1.1일** 개선 실증. → 콜 리소스 배분 정책의 실측 근거로 조직 채택.
 
-### 3. [Channel Talk VOC Dashboard](./projects/channeltalk-voc)
-**GAS + Open API + Chart.js · 단독**
+### 3. [CX 케어·환급 통합 대시보드](./projects/cx-integrated-dashboard)
+**GAS + Open API + Chart.js · 단독** · (구 Channel Talk VOC Dashboard 전면 개편)
 
-채널톡 상담 데이터를 민감정보 제외 후 집계 단위로 분류하고, 태그·인입경로 등 문의 카테고리를 대시보드화. 이 도구를 기반으로 해지요청 **2,829건**을 분석해 클레임성 이탈 **29%**와 응대 유형별 개선 과제 도출.
+환급·케어 두 채널을 한 웹앱에서 수집·분석. 태그·인입경로·조직 성과(진입→종결 히트맵)·해지 태그 vs 실제 해지 매칭·ALF 인입·CSAT까지 통합. 월간 **환급 2,548 / 케어 3,781 대화** 처리 · 매니저-팀 매핑 **56명·11팀** UI 관리 · 자동 이어서 수집 + 스냅샷 시스템.
 
 ### 4. [n8n Self-hosted Workflows](./n8n-workflows)
 **n8n · self-hosted · 5개 프로젝트 · 9개 핵심 워크플로**
@@ -101,7 +101,7 @@ sales-ops-portfolio/
 ├── projects/
 │   ├── cs-operation-tool/           ← GAS + Whisper + LLM
 │   ├── refund-payment-funnel/       ← Python 분석
-│   ├── channeltalk-voc/             ← Channel Talk VOC Dashboard
+│   ├── cx-integrated-dashboard/     ← CX 케어·환급 통합 대시보드 (구 Channel Talk VOC)
 │   ├── zapier-error-dashboard/      ← Zapier 오류 대시보드
 │   ├── care-unpaid-dashboard/       ← 미납 관리 (Chart.js + Slack)
 │   ├── alimtalk-template-manager/   ← Solapi + Claude 심사 사이클
