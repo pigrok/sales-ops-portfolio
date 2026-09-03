@@ -16,7 +16,8 @@
 
 ![조직 성과 · 상담 흐름 히트맵](../../assets/screenshots/cx-integrated-dashboard-org-flow.png)
 
-> 조직 성과 탭 · 상담 흐름 (진입 → 종결) 히트맵 · 자체 종결율 51.1% · 타팀 이관 1,531건 · 팀별·담당자별 문의 건수(미트 활용 병기) · 진단 목록(팀 미매칭·미트 인바운드·담당자 없음)
+> 조직 성과 탭 · 상담 흐름 (최초 응대 → 최종 응대) 히트맵 · 자체 종결율 51.1% · 타팀 이관 1,531건 · 팀별·담당자별 문의 건수(미트 활용 병기) · 진단 목록(팀 미매칭·미트 인바운드·담당자 없음)
+> · 담당자 실명은 마스킹 처리
 
 ![해지 관련 3단 카드 + 매칭 분석](../../assets/screenshots/cx-integrated-dashboard-cancel.png)
 
@@ -98,3 +99,4 @@ Google Apps Script (Web App · V8) · Channel Talk Open API v5 · Google Sheets 
 - 매니저-팀 초기 세팅 (`setupManagerTeamMappingManual`)의 실제 인원·이메일 리스트는 마스킹 (`<MGR_N>` · `<TEAM_A/B/CX/...>` 형태)
 - 매니저 오버라이드 맵(`MGR_TEAM_OVERRIDES`)도 마스킹
 - 원문 대화·개인정보는 저장소에 포함하지 않고, 대시보드는 집계·시각화 지표만 표시
+- 스크린샷 중 담당자 실명이 노출되는 영역(조직 대시보드의 담당자별 문의 건수 차트·표)은 마스킹 처리
